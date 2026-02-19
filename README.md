@@ -8,5 +8,5 @@ sudo pacman -S python3-gi gir1.2-gtk-4.0
 $capture-ai = /home/$USER/capture-ai/capture-ai.sh
 
 
-bind = $mainMod SHIFT, Q, exec, $capture-ai image
-bind = $mainMod, Q, exec, $capture-ai text
+bind = $mainMod SHIFT, Q, exec, $capture-ai image  
+bind = $mainMod, Q, exec, $capture-ai text  
