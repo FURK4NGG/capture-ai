@@ -12,7 +12,11 @@ bind = $mainMod SHIFT, Q, exec, $capture-ai image
 bind = $mainMod, Q, exec, $capture-ai text  
 
 Offline Voice for Linux  
-sudo pacman -S --needed git cmake make gcc  
+sudo pacman -S --needed git cmake make gcc pipewire wireplumber alsa-utils  
+
+paket kontrol  
+command -v pw-record || echo "pw-record yok"  
+command -v arecord  || echo "arecord yok"  
 
 git clone https://github.com/ggml-org/whisper.cpp.git  
 cd whisper.cpp  
@@ -26,6 +30,10 @@ Tiny model indirme (hafif, düşük CPU)
 mkdir -p ~/.local/share/whisper  
 wget -O ~/.local/share/whisper/ggml-tiny.bin \  
   https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin  
+
+paket test  
+ls -l ~/whisper.cpp/build/bin/whisper-cli  
+ls -lh ~/.local/share/whisper/ggml-tiny.bin  
 
 Manual test (çalıştığını doğruladık)  
 /home/bob/whisper.cpp/build/bin/whisper-cli \  
