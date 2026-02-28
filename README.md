@@ -165,3 +165,110 @@ If is_mic_online: true, transcribes via OpenRouter
 Sends base64 WAV as input_audio  
 Model selected via stt_model_online  
 </details>
+
+<details>
+<summary>Bilgi Hastaları için</summary>
+1. Chat yönetimi  
+Yeni chat oluşturma (chat_1.json, chat_2.json…)  
+Chat’ler arasında geçiş  
+Chat silme (onay pencereli, geri alınamaz)  
+Chat ismini değiştirme (rename popover)  
+Chat sabitleme (📌 pinned)  
+Chat liste sıralaması: önce pinned, sonra son değiştirilene gör  
+
+2. Kalıcı ayarlar (config.json)  
+Son açık chat’i hatırlama (last_chat)  
+Karanlık/Aydınlık tema tercihi (dark_mode)  
+Sabitlenen chat’ler listesi (pinned_chats)  
+Model listesi (ai_models)  
+Chat başına model eşlemesi (chat_models)  
+OpenRouter API key saklama (open_router_key)  
+Mikrofon modu online/offline seçimi (is_mic_online)  
+Online STT model seçimi (stt_model_online)  
+Offline STT için whisper.cpp binary/model yolları (whisper_cpp_bin, whisper_cpp_model)  
+
+3. Sidebar UI  
+Sidebar daralt / genişlet (☰)  
+Chats listesini aç/kapat  
+AI models listesini aç/kapat  
+
+4. Model yönetimi (chat başına)  
+Her chat için ayrı aktif model  
+Model seçince o chat’e atanır  
+LRU mantığı: seçtiğin model liste başına alınır  
+Model silme (son model silinemez; en az 1 model kalır)  
+Silinen model chat’lerde kullanılıyorsa otomatik default modele çekilir (self-heal)  
+“AI Models +” ile yeni model ekleme (dialog + OpenRouter models linki)  
+
+5. Mesaj seçim modu  
+Mesaja tıklayarak bir/çok mesaj seçme  
+Seçili mesaj sayısını gösteren bar  
+Seçimi tek tuşla temizleme (✕)  
+Seçili mesajlar balon üzerinde outline ile işaretlenir  
+
+6. Reference trees (referans zinciri / ağaç)  
+Seçtiğin referans mesajların used_refs zincirini genişletir  
+Yani referansın referansı da otomatik dahil edilir (foto/ref kaybolmasın diye)  
+Gönderilen yeni kullanıcı mesajına:  
+used_refs (AI’ya giden index seti)  
+refs_groups (UI’da referans önizleme grupları)  
+kaydedilir  
+
+7. Referans önizleme (refs preview)  
+Referansla gönderilmiş mesajlar üstte “mini preview” olarak gösterilir  
+Grup grup gösterim (refs_groups)  
+Uzun satırlar kısaltılır (200 karakter)  
+
+8. Regenerate (♻)  
+Tek seçili balonda görünür  
+User mesajı seçilirse: aynı mesajı yeniden sorar  
+Bot mesajı seçilirse:  
+önceki user sorusunu bulur  
+bot cevabını “kopyalama bloğu” içeriğiyle iyileştirerek yeniden üretir  
+Regenerate mesajı özel renkle işaretlenir (regen)  
+Regenerate sırasında referans zinciri korunur (reference trees)  
+
+9. Copy (📋)  
+Tek seçili balonda görünür  
+Mesaj içeriğinde copy ... copy bloğu varsa sadece içi kopyalanır  
+Yoksa tüm mesaj kopyalanır  
+
+10. Kod bloğu algılama  
+İçerikte copy sınırları varsa “code-block” görünümü ile render eder  
+Kod bloğunda “Kopyala” butonu vardır (overlay)  
+
+11. Görsel gönderme / önizleme  
+Bir görsel “pending_image” olarak eklenebilir  
+Chat’e mesajla birlikte image path kaydedilir  
+Mesajlarda görsel varsa küçük preview gösterilir  
+Gönderim öncesi preview kutusu gösterilir, gönderince temizlenir  
+
+12. Typing indicator  
+AI yanıtı beklerken “Düşünüyor…” animasyonu  
+Yanıt gelince otomatik kaldırılır  
+
+13. Scroll davranışları  
+Aşağı kaydırma butonu (↓) — kullanıcı yukarıdaysa görünür  
+Tıklayınca en alta iner ve auto-scroll tekrar açılır  
+Scroll konumuna göre buton otomatik gizlenir/gösterilir  
+(Sende ayrıca “sadece regenerate’de aşağı kaydır” mantığını da ayarladık)  
+
+14. Input kısayolları  
+Enter: gönder  
+Shift+Enter: yeni satır  
+(Eklediğimiz) Ctrl+C / Ctrl+V / Ctrl+X / Ctrl+A kopyala–yapıştır–kes–tümünü seç  
+
+15. Mikrofon: Sesle yazma (Voice-to-text)  
+🎤 butonu ile kayıt başlat / ⏹ ile durdur  
+Linux’ta pw-record varsa onu kullanır, yoksa arecord  
+Durdurunca offline/online STT’ye göre transcribe edip input’a ekler  
+
+16. Offline STT (whisper.cpp)  
+whisper-cli + ggml-tiny.bin ile düşük CPU transkripsiyon  
+Çıktıyı .txt’den okur (veya stdout fallback)  
+
+17. Online STT (OpenRouter)  
+is_mic_online: true ise OpenRouter üzerinden STT  
+Audio input input_audio ile base64 wav gönderme  
+Model stt_model_online ile seçilir  
+</details>
