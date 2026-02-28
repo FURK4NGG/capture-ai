@@ -12,6 +12,14 @@ bind = $mainMod SHIFT, Q, exec, $capture-ai image
 bind = $mainMod, Q, exec, $capture-ai text  
 
 Offline Voice for Linux  
+🎤 pw-record / arecord  
+⬇  
+📄 WAV dosyası  
+⬇  
+🧠 whisper-cli  
+⬇  
+✍ Metin  
+
 sudo pacman -S --needed git cmake make gcc pipewire wireplumber alsa-utils  
 
 paket kontrol  
