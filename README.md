@@ -59,9 +59,9 @@ Manual test (çalıştığını doğruladık)
 - [x] Enter input with your voice -Speech to text(online or local)-
 - [ ]
  
-```
--For Nerds-  
-
+## 🔎 Preparation
+<details>
+<summary>For Nerds</summary>
 1. Chat management
 Create new chats (chat_1.json, chat_2.json, …)
 Switch between chats
@@ -164,4 +164,4 @@ Reads .txt output (stdout fallback)
 If is_mic_online: true, transcribes via OpenRouter
 Sends base64 WAV as input_audio
 Model selected via stt_model_online
-```
+</details>
