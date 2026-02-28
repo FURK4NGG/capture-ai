@@ -25,7 +25,7 @@ ls build/bin
 Tiny model indirme (hafif, düşük CPU)  
 mkdir -p ~/.local/share/whisper  
 wget -O ~/.local/share/whisper/ggml-tiny.bin \  
-https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin  
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin  
 
 Manual test (çalıştığını doğruladık)  
 /home/bob/whisper.cpp/build/bin/whisper-cli \  
