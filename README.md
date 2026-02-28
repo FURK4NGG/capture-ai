@@ -52,12 +52,19 @@ Manual test (çalıştığını doğruladık)
 <br><br>
 
 ## Roadmap
-- [x] Use reference trees
+- [x] Easy access with keyboard shortcuts
+- [x] Model management per chat
+- [x] Access every AI model easily
+- [x] Unlimited reference tree support
 - [x] Dark/Light themes
-- [x] Copiable code blocks
+- [x] Just one configure file
+- [x] Copyable code blocks
 - [x] Regenerate
+- [x] Keep all your chats in your machine
 - [x] Enter input with your voice -Speech to text(online or local)-
-- [ ]
+- [ ] Adding documents
+- [ ] AI can access and change your documents within permission
+- [ ] Compatible with macOS, Windows, and Linux devices
  
 ## 🔎 Preparation
 <details>
