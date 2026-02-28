@@ -20,7 +20,7 @@ cmake -B build
 cmake --build build -j --config Release  
 
 ls build/bin  
- ... whisper-cli, main, whisper-server, ...  
+ #... whisper-cli, main, whisper-server, ...  
 
 Tiny model indirme (hafif, düşük CPU)  
 mkdir -p ~/.local/share/whisper  
