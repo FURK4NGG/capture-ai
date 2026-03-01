@@ -365,7 +365,7 @@ def main():
     if not API_KEY:
         _die("OpenRouter API Key bulunamadı.", 1)
 
-    # ✅ model seçimi (chat’e göre)
+    # model seçimi (chat’e göre)
     model_name = _pick_model(cfg, chat_file, args.model)
 
     # Read chat

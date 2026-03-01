@@ -53,7 +53,19 @@ class ChatApp(Gtk.Application):
         self.pending_files = []
 
         if image_path:
-            self.pending_images = [image_path]
+            try:
+                from urllib.parse import urlparse, unquote
+                p = str(image_path).strip()
+
+                # file://... URI gelirse path’e çevir
+                if p.startswith("file://"):
+                    p = unquote(urlparse(p).path)
+
+                rp = str(Path(p).expanduser().resolve())
+                if Path(rp).exists():
+                    self.pending_images = [rp]
+            except Exception:
+                pass
 
         self.sidebar_expanded = True
         self.chats_list_open = True
@@ -311,30 +323,50 @@ class ChatApp(Gtk.Application):
         self.preview_row.set_halign(Gtk.Align.FILL)
         self.preview_row.set_margin_start(10)
 
+        self.preview_prev_btn = Gtk.Button(label="<")
+        self.preview_prev_btn.set_valign(Gtk.Align.CENTER)
+        self.preview_prev_btn.set_vexpand(False)
+        self.preview_prev_btn.set_size_request(28, 32)
+        self.preview_prev_btn.add_css_class("flat")
+        self.preview_prev_btn.set_tooltip_text("Sola kaydır")
+        self.preview_prev_btn.connect("clicked", self.scroll_preview_left)
+        self.preview_prev_btn.set_visible(False)
+        self.preview_row.append(self.preview_prev_btn)
+
         self.preview_scroller = Gtk.ScrolledWindow()
         self.preview_scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
         self.preview_scroller.set_hexpand(True)
-        self.preview_scroller.set_propagate_natural_height(True)
+        self.preview_scroller.set_propagate_natural_height(False)
+        self.preview_scroller.set_max_content_height(90)
         self.preview_scroller.set_min_content_height(90)
+        self.preview_scroller.set_vexpand(False)
+        self.preview_scroller.set_valign(Gtk.Align.END)
+
+        hadj = self.preview_scroller.get_hadjustment()
+        if hadj:
+            hadj.connect("value-changed", lambda *_: GLib.idle_add(self._update_preview_overflow))
 
         self.preview_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.preview_hbox.set_halign(Gtk.Align.START)
+        self.preview_hbox.set_hexpand(False)
         self.preview_scroller.set_child(self.preview_hbox)
 
         self.preview_row.append(self.preview_scroller)
 
         self.preview_next_btn = Gtk.Button(label=">")
+        self.preview_next_btn.set_valign(Gtk.Align.CENTER)
+        self.preview_next_btn.set_vexpand(False)
+        self.preview_next_btn.set_size_request(28, 32)
         self.preview_next_btn.add_css_class("flat")
         self.preview_next_btn.set_tooltip_text("Sağa kaydır")
         self.preview_next_btn.connect("clicked", self.scroll_preview_right)
-        self.preview_next_btn.set_visible(False)  # sadece taşınca
+        self.preview_next_btn.set_visible(False)
         self.preview_row.append(self.preview_next_btn)
+
+        self.preview_row.set_visible(False)
 
         # başta gizli (chat zıplamasın istersen opacity yaklaşımı da kullanabilirsin)
         self.preview_row.set_visible(False)
-        self.content_box.append(self.preview_row)
-
-        self.refresh_attachments_preview()
 
         self.bottom_spacer = Gtk.Box()
         self.bottom_spacer.set_size_request(-1, 110)
@@ -349,37 +381,86 @@ class ChatApp(Gtk.Application):
         vadj = self.scroll.get_vadjustment()
         vadj.connect("value-changed", self.on_scroll_changed)
 
-        # Floating input
+        # ---------------- BOTTOM BAR (PREVIEW + INPUT) ----------------
+        bottom_bar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        bottom_bar.set_hexpand(True)
+        bottom_bar.set_halign(Gtk.Align.FILL)
+        bottom_bar.set_vexpand(False)
+        bottom_bar.set_margin_bottom(12)
+
+        bottom_bar.set_valign(Gtk.Align.END)
+        bottom_bar.set_vexpand(False)
+        overlay.add_overlay(bottom_bar)
+
+        bottom_clamp = Adw.Clamp()
+        bottom_clamp.set_hexpand(True)
+        bottom_clamp.set_halign(Gtk.Align.FILL)
+        bottom_clamp.set_vexpand(False)
+        bottom_clamp.props.maximum_size = 800
+        bottom_clamp.props.tightening_threshold = 800
+        bottom_bar.append(bottom_clamp)
+
+        bottom_inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        bottom_inner.set_hexpand(True)
+        bottom_inner.set_halign(Gtk.Align.FILL)
+        bottom_inner.set_vexpand(False)
+        bottom_clamp.set_child(bottom_inner)
+        self.bottom_inner = bottom_inner
+
+        # Preview satırı (input'un üstünde) + input aynı genişlik/paddingte dursun
+        pad = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        pad.set_hexpand(True)
+        pad.set_halign(Gtk.Align.FILL)
+        pad.set_vexpand(False)
+
+        # input ile aynı "iç boşluk" hissi için
+        pad.set_margin_start(8)
+        pad.set_margin_end(8)
+
+        self.preview_parent = pad
+        bottom_inner.append(pad)
+
+        # Görünmez holder: preview burada duracak (border/back yok)
+        self.preview_holder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.preview_holder.set_hexpand(True)
+        self.preview_holder.set_halign(Gtk.Align.FILL)
+        self.preview_holder.set_vexpand(False)
+
+        # input'a çok yakın dursun
+        self.preview_holder.set_margin_top(0)
+        self.preview_holder.set_margin_bottom(0)
+
+        pad.append(self.preview_holder)
+
+        # Preview satırı (holder içinde)
+        self.preview_row.set_valign(Gtk.Align.END)
+        self.preview_row.set_vexpand(False)
+        self.preview_row.set_hexpand(True)
+        self.preview_row.set_halign(Gtk.Align.FILL)
+
+        # ÖNEMLİ: preview_row üzerindeki marginleri 0 tut
+        self.preview_row.set_margin_start(0)
+        self.preview_row.set_margin_end(0)
+
+        self.preview_holder.append(self.preview_row)
+
+        # Input satırı (preview'un altında)
         input_wrapper = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         input_wrapper.set_hexpand(True)
         input_wrapper.set_halign(Gtk.Align.FILL)
         input_wrapper.set_valign(Gtk.Align.END)
-        input_wrapper.set_margin_bottom(12)
-        overlay.add_overlay(input_wrapper)
+        input_wrapper.set_vexpand(False)
 
-        # 🔽 Scroll to bottom button
-        self.scroll_btn = Gtk.Button(label="↓")
-        self.scroll_btn.set_size_request(36, 36)
-        self.scroll_btn.set_valign(Gtk.Align.END)
-        self.scroll_btn.set_halign(Gtk.Align.END)
-        self.scroll_btn.set_margin_bottom(80)  # input'un üstünde dursun
-        self.scroll_btn.set_margin_end(20)
-        self.scroll_btn.add_css_class("scroll-btn")
-        self.scroll_btn.connect("clicked", self.on_scroll_button_clicked)
-        self.scroll_btn.set_visible(False)
-        overlay.add_overlay(self.scroll_btn)
+        pad.append(input_wrapper)
 
-        clamp = Adw.Clamp()
-        clamp.set_hexpand(True)
-        clamp.set_halign(Gtk.Align.FILL)
-        clamp.props.maximum_size = 800
-        clamp.props.tightening_threshold = 800
-        input_wrapper.append(clamp)
+        # refresh'i pad + preview yerleştikten sonra çağır (senin yaptığın doğru)
+        self.refresh_attachments_preview()
 
         input_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         input_row.set_hexpand(True)
         input_row.set_halign(Gtk.Align.FILL)
-        clamp.set_child(input_row)
+        input_row.set_vexpand(False)
+        input_wrapper.append(input_row)
 
         attach_btn = Gtk.Button(label="📎")
         attach_btn.set_valign(Gtk.Align.END)
@@ -427,6 +508,18 @@ class ChatApp(Gtk.Application):
         key_controller.connect("key-pressed", self.on_textview_key_pressed)
         self.textview.add_controller(key_controller)
 
+        # (Scroll-to-bottom butonu overlay’de kalabilir; margin_bottom’u input yüksekliğine göre ayarla)
+        self.scroll_btn = Gtk.Button(label="↓")
+        self.scroll_btn.set_size_request(36, 36)
+        self.scroll_btn.set_valign(Gtk.Align.END)
+        self.scroll_btn.set_halign(Gtk.Align.END)
+        self.scroll_btn.set_margin_bottom(110)   # preview+input üstünde dursun
+        self.scroll_btn.set_margin_end(20)
+        self.scroll_btn.add_css_class("scroll-btn")
+        self.scroll_btn.connect("clicked", self.on_scroll_button_clicked)
+        self.scroll_btn.set_visible(False)
+        overlay.add_overlay(self.scroll_btn)
+
         # aktif chat modeli yükle
         self.active_model = self.get_chat_model(self.current_chat)
 
@@ -469,6 +562,15 @@ class ChatApp(Gtk.Application):
 
         .send_btn {
            margin-bottom: 14px;
+        }
+
+        .attach-x {
+            padding: 0px;
+            margin: 0px;
+            border-radius: 999px;
+            min-width: 18px;
+            min-height: 18px;
+            font-size: 12px;
         }
 
         .chat-textview {
@@ -761,6 +863,22 @@ class ChatApp(Gtk.Application):
         dialog.open_multiple(self.win, None, on_done)
 
     def refresh_attachments_preview(self):
+        try:
+            # Preview her zaman preview_holder içinde kalsın
+            holder = getattr(self, "preview_holder", None)
+            if holder and self.preview_row:
+                parent = self.preview_row.get_parent()
+                if parent is not holder:
+                    if parent is not None:
+                        try:
+                            parent.remove(self.preview_row)
+                        except Exception:
+                            pass
+                    holder.append(self.preview_row)
+        except Exception:
+            pass
+
+        was_at_bottom = self.is_at_bottom()
         # temizle
         if not hasattr(self, "preview_hbox"):
             return
@@ -779,27 +897,67 @@ class ChatApp(Gtk.Application):
             return
 
         # görseller
-        for p in self.pending_images:
+        for p in list(self.pending_images):
             img_path = Path(p)
             if not img_path.exists():
                 continue
 
+            # Kart içeriği
             item = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
             item.set_halign(Gtk.Align.START)
+            item.set_hexpand(False)
+            item.set_vexpand(False)
+            item.set_size_request(110, -1)
 
             file = Gio.File.new_for_path(str(img_path.resolve()))
             pic = Gtk.Picture.new_for_file(file)
+            pic.set_can_shrink(True)
+            pic.set_keep_aspect_ratio(True)
             pic.set_content_fit(Gtk.ContentFit.COVER)
             pic.set_size_request(96, 72)
+            pic.set_hexpand(False)
+            pic.set_vexpand(False)
+            pic.set_halign(Gtk.Align.START)
 
             name = Gtk.Label(label=img_path.name)
             name.set_xalign(0)
+            name.set_hexpand(False)
+            name.set_halign(Gtk.Align.START)
+            name.set_wrap(False)
+            name.set_single_line_mode(True)
             name.set_max_width_chars(18)
             name.set_ellipsize(Pango.EllipsizeMode.END)
 
             item.append(pic)
             item.append(name)
-            self.preview_hbox.append(item)
+
+            # Overlay: sağ üst X
+            overlay_item = Gtk.Overlay()
+            overlay_item.set_child(item)
+
+            xbtn = Gtk.Button(label="✕")
+            xbtn.add_css_class("flat")
+            xbtn.set_focusable(False)
+            xbtn.set_halign(Gtk.Align.END)
+            xbtn.set_valign(Gtk.Align.START)
+            xbtn.set_margin_top(2)
+            xbtn.set_margin_end(2)
+            xbtn.set_size_request(22, 22)
+
+            self._consume_click(xbtn)
+
+            def _rm_img(_b, path=str(img_path.resolve())):
+                try:
+                    if path in self.pending_images:
+                        self.pending_images.remove(path)
+                except Exception:
+                    pass
+                self.refresh_attachments_preview()
+
+            xbtn.connect("clicked", _rm_img)
+            overlay_item.add_overlay(xbtn)
+
+            self.preview_hbox.append(overlay_item)
 
         # belgeler
         for f in self.pending_files:
@@ -809,6 +967,8 @@ class ChatApp(Gtk.Application):
 
             chip = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             chip.add_css_class("attach-chip")
+            chip.set_hexpand(False)
+            chip.set_halign(Gtk.Align.START)
 
             if f.get("edit"):
                 chip.add_css_class("attach-edit-on")
@@ -820,6 +980,10 @@ class ChatApp(Gtk.Application):
             lab.set_xalign(0)
             lab.set_max_width_chars(26)
             lab.set_ellipsize(Pango.EllipsizeMode.END)
+            lab.set_single_line_mode(True)
+            lab.set_hexpand(False)
+            lab.set_halign(Gtk.Align.START)
+            lab.set_wrap(False)
             chip.append(lab)
 
             # tıkla -> edit toggle
@@ -830,18 +994,65 @@ class ChatApp(Gtk.Application):
             click.connect("pressed", _on_chip_clicked)
             chip.add_controller(click)
 
-            self.preview_hbox.append(chip)
+            overlay_chip = Gtk.Overlay()
+            overlay_chip.set_child(chip)
+
+            xbtn = Gtk.Button(label="✕")
+            xbtn.add_css_class("attach-x")
+            xbtn.set_focusable(False)
+            xbtn.set_halign(Gtk.Align.END)
+            xbtn.set_valign(Gtk.Align.START)
+            xbtn.set_margin_top(2)
+            xbtn.set_margin_end(2)
+            xbtn.set_size_request(22, 22)
+
+            self._consume_click(xbtn)
+
+            def _rm_file(_b, path=str(p.resolve())):
+                try:
+                    self.pending_files = [x for x in self.pending_files if str(Path(x.get("path","")).resolve()) != path]
+                except Exception:
+                    pass
+                self.refresh_attachments_preview()
+
+            xbtn.connect("clicked", _rm_file)
+            overlay_chip.add_overlay(xbtn)
+
+            self.preview_hbox.append(overlay_chip)
 
         # taşma var mı? (butonu ona göre aç/kapat)
         GLib.idle_add(self._update_preview_overflow)
+    
+        if was_at_bottom:
+            GLib.idle_add(self.scroll_to_bottom, True)
+
+        GLib.idle_add(self._sync_scroll_btn_margin)
 
     def _update_preview_overflow(self):
         try:
             hadj = self.preview_scroller.get_hadjustment()
             if not hadj:
                 return False
-            overflow = hadj.get_upper() > hadj.get_page_size() + 2
-            self.preview_next_btn.set_visible(bool(overflow))
+
+            upper = hadj.get_upper()
+            page = hadj.get_page_size()
+            val = hadj.get_value()
+
+            # taşma var mı?
+            overflow = upper > page + 2
+
+            # sola kaydırılabiliyor mu?
+            can_left = overflow and (val > 2)
+
+            # sağa kaydırılabiliyor mu?
+            max_val = max(0, upper - page)
+            can_right = overflow and (val < max_val - 2)
+
+            if hasattr(self, "preview_prev_btn"):
+                self.preview_prev_btn.set_visible(bool(can_left))
+            if hasattr(self, "preview_next_btn"):
+                self.preview_next_btn.set_visible(bool(can_right))
+
         except Exception:
             pass
         return False
@@ -853,6 +1064,16 @@ class ChatApp(Gtk.Application):
                 return
             step = max(120, hadj.get_page_size() * 0.75)
             hadj.set_value(min(hadj.get_upper() - hadj.get_page_size(), hadj.get_value() + step))
+        except Exception:
+            pass
+
+    def scroll_preview_left(self, *_):
+        try:
+            hadj = self.preview_scroller.get_hadjustment()
+            if not hadj:
+                return
+            step = max(120, hadj.get_page_size() * 0.75)
+            hadj.set_value(max(0, hadj.get_value() - step))
         except Exception:
             pass
 
@@ -1922,6 +2143,8 @@ class ChatApp(Gtk.Application):
                         continue
                     file = Gio.File.new_for_path(str(p))
                     pic = Gtk.Picture.new_for_file(file)
+                    pic.set_can_shrink(True)
+                    pic.set_keep_aspect_ratio(True)
                     pic.set_content_fit(Gtk.ContentFit.COVER)
                     pic.set_size_request(120, 80)
                     row_imgs.append(pic)
@@ -2143,6 +2366,21 @@ class ChatApp(Gtk.Application):
             self.selection_label.set_text(f"{len(self.selected_indexes)} mesaj referans seçildi")
             self.selection_row.set_opacity(1.0)
             self.selection_row.set_sensitive(True)
+
+    def is_at_bottom(self, slack=6):
+        adj = self.scroll.get_vadjustment() if hasattr(self, "scroll") else None
+        if not adj:
+            return True
+        return adj.get_value() >= (adj.get_upper() - adj.get_page_size() - slack)
+
+    def _sync_scroll_btn_margin(self):
+        try:
+            h = self.preview_row.get_allocated_height() if self.preview_row.get_visible() else 0
+            # input + padding için kaba bir ek
+            self.scroll_btn.set_margin_bottom(80 + h)
+        except Exception:
+            pass
+        return False
 
     def scroll_to_bottom(self, force=False):
         if not self.auto_scroll_enabled and not force:
