@@ -1,0 +1,18 @@
+{
+  "last_chat": "Welcome.json",
+  "dark_mode": true,
+  "open_router_key": "sk-or...",
+  "is_mic_online": false,
+  "stt_model_online": "openai/gpt-audio-mini",
+  "whisper_cpp_bin": "/home/bob/whisper.cpp/build/bin/whisper-cli",
+  "whisper_cpp_model": "/home/bob/.local/share/whisper/ggml-tiny.bin",
+  "pinned_chats": [
+    "Welcome.json"
+  ],
+  "ai_models": [
+    "google/gemini-3-pro-image-preview"
+  ],
+  "chat_models": {
+    "Welcome.json": "google/gemini-3-pro-image-preview"
+  }
+}
