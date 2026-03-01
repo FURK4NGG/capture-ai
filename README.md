@@ -1,6 +1,29 @@
 # ai-controller
 
-sudo pacman -S python3-gi gir1.2-gtk-4.0
+sudo pacman -S python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
+
+sudo pacman -S --needed \
+  python python-gobject gtk4 libadwaita \
+  gobject-introspection \
+  cairo pango glib2 \
+  xdg-utils
+
+#voice record
+pw-record --> sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
+arecord --> sudo pacman -S --needed alsa-utils
+
+#offline stt
+sudo pacman -S --needed cmake make gcc
+
+#screenhot
+sudo pacman -S --needed \
+  grim slurp swappy wl-clipboard \
+  wf-recorder ffmpeg
+
+#Enviroment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
 ~/.config/capture-ai/env.sh --> export OPENROUTER_API_KEY="sk-or-v..."
 
