@@ -85,8 +85,8 @@ Manual test (çalıştığını doğruladık)
 - [x] Regenerate
 - [x] Keep all your chats in your machine
 - [x] Enter input with your voice -Speech to text(online or local)-
-- [ ] Adding documents
-- [ ] AI can access and change your documents within permission
+- [x] Adding documents
+- [x] AI can access and change your documents within permission
 - [ ] Compatible with macOS, Windows, and Linux devices
  
 ## 🔎 Preparation
