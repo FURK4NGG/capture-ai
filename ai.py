@@ -3,7 +3,6 @@ import sys
 import json
 import base64
 import mimetypes
-import base64
 import shutil
 import argparse
 from pathlib import Path
@@ -410,6 +409,7 @@ def main():
             if i < len(messages) - 1:
                 msg = messages[i]
                 role = _role_map(msg.get("role"))
+                has_any_attach = False
 
                 # editable_map doldur (referans mesajın file edit izinleri)
                 files_meta = msg.get("files") or []
@@ -446,6 +446,8 @@ def main():
                     "role": msg.get("role", ""),
                     "content": msg.get("content", ""),
                     "image_original": msg.get("image", None),
+                    "images_original": msg.get("images", None),
+                    "files_original": msg.get("files", None),
                     "image_cached": cached_img
                 })
 
