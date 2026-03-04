@@ -302,3 +302,6 @@ is_mic_online: true ise OpenRouter üzerinden STT
 Audio input input_audio ile base64 wav gönderme  
 Model stt_model_online ile seçilir  
 </details>
+
+## 🔒 License  
+<h1 align="center">📜 GPL-3.0 License</h1>
