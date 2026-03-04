@@ -89,7 +89,7 @@ Manual test (çalıştığını doğruladık)
 - [x] AI can access and change your documents within permission
 - [ ] Compatible with macOS, Windows, and Linux devices
  
-## 🔎 Preparation
+## 🔎 ALL APP FEATURES
 <details>
 <summary>For Nerds</summary>
 1. Chat management  
