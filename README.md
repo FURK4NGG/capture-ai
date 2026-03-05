@@ -79,6 +79,7 @@ Manual test (çalıştığını doğruladık)
 - [x] Model management per chat
 - [x] Access every AI model easily
 - [x] Unlimited reference tree support
+- [x] Customize how the AI responds
 - [x] Dark/Light themes
 - [x] Just one configure file
 - [x] Copyable code blocks
