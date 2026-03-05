@@ -1,5 +1,5 @@
 # ai-controller
-
+<!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
 sudo pacman -S python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
 
 sudo pacman -S --needed \
