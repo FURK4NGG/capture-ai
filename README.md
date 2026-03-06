@@ -80,7 +80,7 @@ Manual test (çalıştığını doğruladık)
 - [x] Access every AI model easily
 - [x] Unlimited reference tree support
 - [x] Customize how the AI responds
-- [x] See tokens for each messages
+- [x] Shows how many tokens are consumed for each message
 - [x] Dark/Light themes
 - [x] Just one configure file
 - [x] Copyable code blocks
