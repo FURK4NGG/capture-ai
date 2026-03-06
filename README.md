@@ -90,6 +90,10 @@ Manual test (çalıştığını doğruladık)
 - [x] Adding documents
 - [x] AI can access and change your documents within permission
 - [ ] Compatible with macOS, Windows, and Linux devices
+- [ ] Run local text model
+- [ ] Generate image
+- [ ] Change UI colors
+- [ ] Control with terminal
  
 ## 🔎 ALL APP FEATURES
 <details>
