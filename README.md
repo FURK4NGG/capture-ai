@@ -89,10 +89,10 @@ Manual test (çalıştığını doğruladık)
 - [x] Enter input with your voice -Speech to text(online or local)-
 - [x] Adding documents
 - [x] AI can access and change your documents within permission
+- [x] Change UI colors
 - [ ] Compatible with macOS, Windows, and Linux devices
 - [ ] Run local text model
 - [ ] Generate image
-- [ ] Change UI colors
 - [ ] Control with terminal
  
 ## 🔎 ALL APP FEATURES
