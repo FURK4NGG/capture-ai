@@ -1,9 +1,11 @@
-#!/usr/bin/env python4
+#!/usr/bin/env python3
 import gi
+import os
 import sys
 import json
 import subprocess
 import threading
+import codecs
 from pathlib import Path
 import base64
 import tempfile
@@ -40,6 +42,38 @@ DEFAULT_CHAT = CHAT_DIR / last_chat_name
 if not DEFAULT_CHAT.exists():
     DEFAULT_CHAT.write_text("[]", encoding="utf-8")
 
+DEFAULT_CUSTOM_COLORS_DARK = {
+    "window_bg": "#111111",
+    "input_bg": "#1e1e1e",
+    "user_bg": "#303643",
+    "user_text": "#ffffff",
+    "bot_bg": "#222222",
+    "bot_text": "#ffffff",
+    "sidebar_text": "#dddddd",
+}
+
+DEFAULT_CUSTOM_COLORS_LIGHT = {
+    "window_bg": "#f5f5f5",
+    "input_bg": "#ffffff",
+    "user_bg": "#dbe7ff",
+    "user_text": "#111111",
+    "bot_bg": "#ececec",
+    "bot_text": "#111111",
+    "sidebar_text": "#111111",
+}
+
+def fix_mojibake(s: str) -> str:
+    if not s:
+        return s
+    # Mojibake tipik işaretleri
+    if ("Ã" not in s) and ("Å" not in s) and ("â" not in s):
+        return s
+    try:
+        return s.encode("latin-1").decode("utf-8")
+    except Exception:
+        return s
+
+
 
 class ChatApp(Gtk.Application):
     def __init__(self, image_path=None):
@@ -71,13 +105,19 @@ class ChatApp(Gtk.Application):
         self.chats_list_open = True
         self.models_list_open = True
 
+        self.ai_proc = None
+        self.ai_stop_requested = False
+        self.is_generating = False
+
         self.auto_focus_enabled = True
         self.auto_scroll_enabled = True
         self.selected_indexes = set()
+        self.typing_active = False
         self.selection_mode = False
 
         # aktif chat’in modeli (chat başına)
         self.active_model = None
+        self.streaming_row = None
 
     # ---------------- CONFIG HELPERS ----------------
 
@@ -97,6 +137,115 @@ class ChatApp(Gtk.Application):
                 json.dump(cfg, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print("config save error:", e)
+
+
+
+    def ensure_ui_i18n_config(self):
+        cfg = self.load_config()
+        changed = False
+
+        if not isinstance(cfg.get("ui_language"), str) or not str(cfg.get("ui_language")).strip():
+            cfg["ui_language"] = "tr"
+            changed = True
+
+        if not isinstance(cfg.get("ui_strings"), dict):
+            cfg["ui_strings"] = {}
+            changed = True
+
+        if changed:
+            self.save_config(cfg)
+
+    def get_ui_language(self) -> str:
+        cfg = self.load_config()
+        lang = str(cfg.get("ui_language", "tr") or "tr").strip().lower()
+        return lang if lang else "tr"
+
+    def get_ui_strings_map(self) -> dict:
+        cfg = self.load_config()
+        raw = cfg.get("ui_strings", {})
+        return raw if isinstance(raw, dict) else {}
+
+    def get_ui_lang_map(self, lang: str | None = None) -> dict:
+        if lang is None:
+            lang = self.get_ui_language()
+
+        all_strings = self.get_ui_strings_map()
+        selected = all_strings.get(lang, {})
+        if not isinstance(selected, dict):
+            selected = {}
+        return selected
+
+    def __call__(self, key: str) -> str:
+        lang_map = self.get_ui_lang_map()
+        return str(lang_map.get(key, key))
+
+    def set_ui_language(self, lang: str):
+        lang = str(lang or "").strip().lower()
+        if not lang:
+            return
+
+        cfg = self.load_config()
+        cfg["ui_language"] = lang
+        self.save_config(cfg)
+
+    def get_available_ui_languages(self) -> list[str]:
+        strings = self.get_ui_strings_map()
+        if not isinstance(strings, dict):
+            return []
+
+        out = []
+        for k in strings.keys():
+            ks = str(k).strip()
+            if ks:
+                out.append(ks)
+
+        return out
+
+
+
+    def _get_active_colors_key(self) -> str:
+        cfg = self.load_config()
+        is_dark = bool(cfg.get("dark_mode", True))
+        return "custom_colors_dark" if is_dark else "custom_colors_light"
+
+    def _get_default_theme_colors(self, is_dark: bool | None = None) -> dict:
+        if is_dark is None:
+            cfg = self.load_config()
+            is_dark = bool(cfg.get("dark_mode", True))
+
+        base = DEFAULT_CUSTOM_COLORS_DARK if is_dark else DEFAULT_CUSTOM_COLORS_LIGHT
+        return dict(base)
+
+    def _get_theme_colors(self) -> dict:
+        cfg = self.load_config()
+        is_dark = bool(cfg.get("dark_mode", True))
+        key = "custom_colors_dark" if is_dark else "custom_colors_light"
+
+        raw = cfg.get(key, {})
+        if not isinstance(raw, dict):
+            raw = {}
+
+        defaults = self._get_default_theme_colors(is_dark)
+
+        out = {}
+        for k, v in defaults.items():
+            out[k] = str(raw.get(k, v))
+        return out
+
+    def _save_theme_colors(self, colors: dict):
+        cfg = self.load_config()
+        key = self._get_active_colors_key()
+        cfg[key] = dict(colors)
+        self.save_config(cfg)
+
+    def _reset_active_theme_colors_to_default(self):
+        cfg = self.load_config()
+        is_dark = bool(cfg.get("dark_mode", True))
+        key = "custom_colors_dark" if is_dark else "custom_colors_light"
+        cfg[key] = self._get_default_theme_colors(is_dark)
+        self.save_config(cfg)
+
+
 
     def _get_models_list(self, cfg: dict):
         models = cfg.get("ai_models", [])
@@ -189,10 +338,13 @@ class ChatApp(Gtk.Application):
         self.win = Gtk.ApplicationWindow(application=app)
         self.win.set_title("Capture AI")
         self.win.set_default_size(1100, 750)
+        self.ensure_color_configs()
+        self.ensure_ui_i18n_config()
         self.apply_theme(dark_mode)
         self.apply_css()
 
         root = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        root.add_css_class("app-root")
         self.win.set_child(root)
 
         # SIDEBAR
@@ -200,72 +352,102 @@ class ChatApp(Gtk.Application):
         self.sidebar.add_css_class("sidebar")
         self.sidebar.set_size_request(250, -1)
         self.sidebar.set_hexpand(False)
-        self.sidebar.set_halign(Gtk.Align.START)
+        self.sidebar.set_vexpand(True)
+        self.sidebar.set_valign(Gtk.Align.FILL)
+        root.append(self.sidebar)
 
         self.toggle_btn = Gtk.Button(label="☰")
+        self.bind_i18n(self.toggle_btn, "tooltip", "o_Toggle_Sidebar")
         self.toggle_btn.connect("clicked", self.toggle_sidebar)
         self.sidebar.append(self.toggle_btn)
 
-        # CHATS HEADER
-        self.chats_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.new_btn_sidebar = Gtk.Button(label="+")
+        self.new_btn_sidebar.set_visible(False)
+        self.bind_i18n(self.new_btn_sidebar, "tooltip", "o_New_Chat")
+        self.new_btn_sidebar.connect("clicked", self.create_chat)
+        self.sidebar.append(self.new_btn_sidebar)
 
-        self.chats_toggle_btn = Gtk.Button(label="Chats ▾")
-        self.chats_toggle_btn.connect("clicked", self.toggle_chats_list)
-        self.chats_header.append(self.chats_toggle_btn)
 
-        self.new_btn = Gtk.Button(label="+")
-        self.new_btn.set_tooltip_text("Yeni Sohbet")
-        self.new_btn.connect("clicked", self.create_chat)
-        self.chats_header.append(self.new_btn)
+        # SIDEBAR SCROLL
+        self.sidebar_scroll = Gtk.ScrolledWindow()
+        self.sidebar_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.sidebar_scroll.set_hexpand(True)
+        self.sidebar_scroll.set_vexpand(True)
+        self.sidebar_scroll.set_valign(Gtk.Align.FILL)
+        self.sidebar.append(self.sidebar_scroll)
 
-        self.sidebar.append(self.chats_header)
-
-        self.chat_list = Gtk.ListBox()
-        self.chat_list.set_activate_on_single_click(True)
-        self.chat_list.connect("row-activated", self.switch_chat)
-        self.sidebar.append(self.chat_list)
+        self.sidebar_scroll_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.sidebar_scroll_content.set_hexpand(True)
+        self.sidebar_scroll_content.set_vexpand(False)
+        self.sidebar_scroll.set_child(self.sidebar_scroll_content)
+        self.sidebar_scroll_content.set_valign(Gtk.Align.START)
 
         # AI MODELS HEADER + LIST
         self.models_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.models_header.set_hexpand(True)
 
-        self.models_toggle_btn = Gtk.Button(label="AI models ▾")
+        self.models_toggle_btn = Gtk.Button(label=f"{self('o_AI_Models')} ▾")
         self.models_toggle_btn.connect("clicked", self.toggle_models_list)
         self.models_header.append(self.models_toggle_btn)
 
         models_spacer = Gtk.Box()
         self.models_header.append(models_spacer)
         self.add_model_btn = Gtk.Button(label="+")
-        self.add_model_btn.set_tooltip_text("Model ekle")
+        self.bind_i18n(self.add_model_btn, "tooltip", "o_Add_Model")
         self.add_model_btn.connect("clicked", self.open_add_model_dialog)
         self.models_header.append(self.add_model_btn)
 
-        self.sidebar.append(self.models_header)
+        self.sidebar_scroll_content.append(self.models_header)
 
         self.models_list = Gtk.ListBox()
         self.models_list.connect("row-activated", self.on_model_row_activated)
         self.models_list.set_activate_on_single_click(False)
-        self.sidebar.append(self.models_list)
+        self.sidebar_scroll_content.append(self.models_list)
 
-        # Spacer
-        spacer = Gtk.Box()
-        spacer.set_vexpand(True)
-        self.sidebar.append(spacer)
+        # CHATS HEADER
+        self.chats_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+        self.chats_toggle_btn = Gtk.Button(label=f"{self('o_Chats')} ▾")
+        self.chats_toggle_btn.connect("clicked", self.toggle_chats_list)
+        self.chats_header.append(self.chats_toggle_btn)
+
+        self.new_btn = Gtk.Button(label="+")
+        self.bind_i18n(self.new_btn, "tooltip", "o_New_Chat")
+        self.new_btn.connect("clicked", self.create_chat)
+        self.chats_header.append(self.new_btn)
+
+
+        self.sidebar_scroll_content.append(self.chats_header)
+
+        self.chat_list = Gtk.ListBox()
+        self.chat_list.set_activate_on_single_click(True)
+        self.chat_list.connect("row-activated", self.switch_chat)
+        self.sidebar_scroll_content.append(self.chat_list)
+
+        # SPACER
+        self.sidebar_spacer = Gtk.Box()
+        self.sidebar_spacer.set_vexpand(True)
+        self.sidebar_spacer.set_visible(False)
+        self.sidebar.append(self.sidebar_spacer)
+
+        # SIDEBAR BOTTOM
+        self.sidebar_bottom = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.sidebar_bottom.set_hexpand(True)
+        self.sidebar_bottom.set_vexpand(False)
+        self.sidebar_bottom.set_valign(Gtk.Align.END)
+        self.sidebar.append(self.sidebar_bottom)
 
         # Dark mode
         dark_mode_btn = Gtk.Button(label="🌓")
-        dark_mode_btn.set_tooltip_text("Toggle Dark Mode")
+        self.bind_i18n(dark_mode_btn, "tooltip", "o_Toggle_Dark_Mode")
         dark_mode_btn.connect("clicked", self.toggle_theme)
-        self.sidebar.append(dark_mode_btn)
+        self.sidebar_bottom.append(dark_mode_btn)
 
-        # API key
-        key_btn = Gtk.Button()
-        key_btn.set_icon_name("dialog-password-symbolic")
-        key_btn.set_tooltip_text("OpenRouter API Key")
-        key_btn.connect("clicked", self.open_key_dialog)
-        self.sidebar.append(key_btn)
-
-        root.append(self.sidebar)
+        # Settings
+        self.settings_btn = Gtk.Button(label="⚙")
+        self.bind_i18n(self.settings_btn, "tooltip", "o_Settings")
+        self.settings_btn.connect("clicked", self.open_settings_menu)
+        self.sidebar_bottom.append(self.settings_btn)
 
         # MAIN
         main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -284,6 +466,7 @@ class ChatApp(Gtk.Application):
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.content_box.set_hexpand(True)
         self.content_box.set_vexpand(True)
+        self.content_box.add_css_class("chat-area")
 
         self.chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.chat_box.set_hexpand(True)
@@ -293,6 +476,26 @@ class ChatApp(Gtk.Application):
         self.selection_row.set_margin_start(10)
         self.selection_row.set_halign(Gtk.Align.START)
 
+        # --- TYPING INDICATOR (chat_box dışında, load_chat silmesin) ---
+        self.typing_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.typing_row.set_halign(Gtk.Align.START)
+        typing_bubble = Gtk.Box()
+        typing_bubble.add_css_class("bot-bubble")
+        self.typing_label = Gtk.Label(label=f"{self('o_Thinking')}")
+        self.typing_label.set_wrap(True)
+        self.typing_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        self.typing_label.set_xalign(0)
+        self.typing_label.set_max_width_chars(60)
+        typing_bubble.append(self.typing_label)
+        self.typing_row.append(typing_bubble)
+        # Başta gizli ama yerini korusun istersen:
+        self.typing_row.set_visible(False)
+        # KRİTİK: chat_box'a değil, content_box'a ekle
+        self.content_box.append(self.typing_row)
+        self.typing_dots = 0
+        self.typing_active = False
+
+
         self.selection_label = Gtk.Label(label="")
         self.selection_label.set_xalign(0)
         self.selection_label.set_halign(Gtk.Align.START)
@@ -300,7 +503,7 @@ class ChatApp(Gtk.Application):
 
         self.selection_clear_btn = Gtk.Button(label="✕")
         self.selection_clear_btn.add_css_class("flat")
-        self.selection_clear_btn.set_tooltip_text("Seçimi temizle")
+        self.bind_i18n(self.selection_clear_btn, "tooltip", "o_Clear_Selection")
         self.selection_clear_btn.connect("clicked", self.clear_selection)
 
         # X'e basınca bubble click falan tetiklenmesin (sende _consume_click varsa)
@@ -328,7 +531,7 @@ class ChatApp(Gtk.Application):
         self.preview_prev_btn.set_vexpand(False)
         self.preview_prev_btn.set_size_request(28, 32)
         self.preview_prev_btn.add_css_class("flat")
-        self.preview_prev_btn.set_tooltip_text("Sola kaydır")
+        self.bind_i18n(self.preview_prev_btn, "tooltip", "o_Scroll_Left")
         self.preview_prev_btn.connect("clicked", self.scroll_preview_left)
         self.preview_prev_btn.set_visible(False)
         self.preview_row.append(self.preview_prev_btn)
@@ -350,6 +553,7 @@ class ChatApp(Gtk.Application):
         self.preview_hbox.set_halign(Gtk.Align.START)
         self.preview_hbox.set_hexpand(False)
         self.preview_scroller.set_child(self.preview_hbox)
+        self.preview_hbox.set_homogeneous(False)
 
         self.preview_row.append(self.preview_scroller)
 
@@ -358,7 +562,7 @@ class ChatApp(Gtk.Application):
         self.preview_next_btn.set_vexpand(False)
         self.preview_next_btn.set_size_request(28, 32)
         self.preview_next_btn.add_css_class("flat")
-        self.preview_next_btn.set_tooltip_text("Sağa kaydır")
+        self.bind_i18n(self.preview_next_btn, "tooltip", "o_Scroll_Right")
         self.preview_next_btn.connect("clicked", self.scroll_preview_right)
         self.preview_next_btn.set_visible(False)
         self.preview_row.append(self.preview_next_btn)
@@ -464,15 +668,18 @@ class ChatApp(Gtk.Application):
 
         attach_btn = Gtk.Button(label="📎")
         attach_btn.set_valign(Gtk.Align.END)
-        attach_btn.set_tooltip_text("Dosya ekle (fotoğraf / belge)")
+        self.bind_i18n(attach_btn, "tooltip", "o_Attachments")
         attach_btn.add_css_class("send_btn")
-        attach_btn.connect("clicked", self.on_attach_clicked)
+        attach_btn.connect("clicked", self.open_attach_menu)
         input_row.append(attach_btn)
+
+        self.attach_btn = attach_btn  # <-- anchor olarak lazım
 
         self.textview = Gtk.TextView()
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.textview.set_hexpand(True)
         self.textview.set_vexpand(False)
+        self.textview.set_size_request(260, -1)
         self.textview.add_css_class("chat-textview")
 
         self.text_scroll = Gtk.ScrolledWindow()
@@ -480,28 +687,32 @@ class ChatApp(Gtk.Application):
         self.text_scroll.set_propagate_natural_height(True)
         self.text_scroll.set_min_content_height(32)
         self.text_scroll.set_max_content_height(140)
+        self.text_scroll.set_min_content_width(260)   # yatayda bundan küçük olmasın
+        self.text_scroll.set_max_content_width(9999)  # istersen sınırsız bırak
+        self.text_scroll.set_vexpand(False)
+        self.text_scroll.set_valign(Gtk.Align.END)
         self.text_scroll.add_css_class("chat-input-box")
         self.text_scroll.set_child(self.textview)
         input_row.append(self.text_scroll)
 
         mic_btn = Gtk.Button(label="🎙️")
         mic_btn.set_valign(Gtk.Align.END)
-        mic_btn.set_tooltip_text("Konuşarak yaz (başlat/durdur)")
+        self.bind_i18n(mic_btn, "tooltip", "o_Microphone")
         mic_btn.connect("clicked", self.toggle_voice_input)
         mic_btn.add_css_class("send_btn")
         input_row.append(mic_btn)
 
         self.mic_btn = mic_btn
-        self._rec_stop = threading.Event()
-        self._rec_thread = None
         self._voice_proc = None
         self._last_wav = None
 
         send_btn = Gtk.Button(label="↑")
         send_btn.set_valign(Gtk.Align.END)
-        send_btn.connect("clicked", lambda *_: self.send_message(None))
+        send_btn.connect("clicked", self.on_send_button_clicked)
         send_btn.add_css_class("send_btn")
         input_row.append(send_btn)
+
+        self.send_btn = send_btn
 
         # key controller
         key_controller = Gtk.EventControllerKey()
@@ -516,6 +727,7 @@ class ChatApp(Gtk.Application):
         self.scroll_btn.set_margin_bottom(110)   # preview+input üstünde dursun
         self.scroll_btn.set_margin_end(20)
         self.scroll_btn.add_css_class("scroll-btn")
+        self.bind_i18n(self.scroll_btn, "tooltip", "o_Scroll_Down")
         self.scroll_btn.connect("clicked", self.on_scroll_button_clicked)
         self.scroll_btn.set_visible(False)
         overlay.add_overlay(self.scroll_btn)
@@ -536,149 +748,225 @@ class ChatApp(Gtk.Application):
     # ---------------- CSS / THEME ----------------
 
     def apply_css(self):
-        css = """
-        .chat-input-box {
+        colors = self._get_theme_colors()
+
+        window_bg = colors["window_bg"]
+        input_bg = colors["input_bg"]
+        user_bg = colors["user_bg"]
+        user_text = colors["user_text"]
+        bot_bg = colors["bot_bg"]
+        bot_text = colors["bot_text"]
+        sidebar_text = colors["sidebar_text"]
+
+        bg_path = self._get_chat_bg_image_path().strip()
+        bg_css = ""
+        if bg_path:
+            try:
+                p = Path(bg_path).expanduser().resolve()
+                if p.exists():
+                    uri = p.as_uri()
+                    bg_css = f"""
+                    .chat-area {{
+                        background-image: url("{uri}");
+                        background-repeat: no-repeat;
+                        background-position: center center;
+                        background-size: cover;
+                    }}
+                    """
+                else:
+                    bg_css = """
+                    .chat-area {
+                        background-image: none;
+                    }
+                    """
+            except Exception:
+                bg_css = """
+                .chat-area {
+                    background-image: none;
+                }
+                """
+        else:
+            bg_css = """
+            .chat-area {
+                background-image: none;
+            }
+            """
+
+
+        css = f"""
+        .app-root {{
+            background: {window_bg};
+        }}
+
+        {bg_css}
+
+        .chat-input-box {{
+            background: {input_bg};
             border-radius: 14px;
             margin-bottom: 8px;
             padding: 6px 10px;
-        }
+        }}
 
-        .attach-chip {
+        .attach-chip {{
             padding: 6px 10px;
+            margin: 3px;
             border-radius: 10px;
-            background: rgba(255,255,255,0.06);
-        }
-        window.light .attach-chip {
+            background: rgba(255,255,255,0.06);       
+        }}
+
+        window.light .attach-chip {{
             background: rgba(0,0,0,0.06);
-        }
+        }}
 
-        window.dark .chat-input-box {
-            background: #1e1e1e;
-        }
+        window.dark .chat-input-box {{
+            background: {input_bg};
+            outline: 1px solid #777C6D;
+        }}
 
-        window.light .chat-input-box {
-            background: gray;
-        }
+        window.light .chat-input-box {{
+            background: {input_bg};
+        }}
 
-        .send_btn {
+        .send_btn {{
            margin-bottom: 14px;
-        }
+        }}
 
-        .attach-x {
+        .attach-x {{
             padding: 0px;
             margin: 0px;
             border-radius: 999px;
             min-width: 18px;
             min-height: 18px;
             font-size: 12px;
-        }
+        }}
 
-        .chat-textview {
+        .attach-edit-on {{
+            padding:6px 10px;
+            margin: 3px;
+            outline: 3px solid #2ecc71;
+            border-radius: 10px;
+        }}
+
+
+        .chat-textview {{
             background: transparent;
-        }
+        }}
 
-        .selected-chat {
+        .selected-chat {{
             background: #d0e0ff;
             border-radius: 6px;
-        }
+        }}
 
-        .sidebar {
+        .sidebar {{
+            background: {window_bg};
+            color: {sidebar_text};
             padding: 8px;
-        }
+        }}
 
-        .user-bubble {
-            background: #303643;
+        .user-bubble {{
+            background: {user_bg};
+            color: {user_text};
             border-radius: 12px;
             padding: 10px;
             margin-right: 10px;
-            color: white;
-        }
+        }}
 
-        .bot-bubble {
+        .bot-bubble {{
+            background: {bot_bg};
+            color: {bot_text};
             border-radius: 12px;
             padding: 10px;
             margin-left: 10px;
-        }
+        }}
 
-        .user-bubble-ref {
+        .image-zoom-btn {{
+            min-width: 26px;
+            min-height: 26px;
+            padding: 0;
+            border-radius: 999px;
+            background: rgba(0,0,0,0.45);
+            color: white;
+        }}
+
+        window.light .image-zoom-btn {{
+            background: rgba(255,255,255,0.85);
+            color: black;
+        }}
+
+        .user-bubble-ref {{
             background: #237227;   /* koyu yeşil gibi (dark mode) */
             border: 1px solid rgba(255,255,255,0.08);
-        }
+        }}
 
-        window.light .user-bubble-ref {
+        window.light .user-bubble-ref {{
             background: #84B179;   /* koyu yeşil gibi (dark mode) */
             color: #111;
             border: 1px solid rgba(0,0,0,0.08);
-        }
+        }}
 
-        .user-bubble-regen {
+        .user-bubble-regen {{
             background: #5a3a8a;  /* koyu mor (dark mode) */
             border: 1px solid rgba(255,255,255,0.08);
-        }
+        }}
 
-        window.light .user-bubble-regen {
+        window.light .user-bubble-regen {{
             background: #e9dcff;  /* açık mor (light mode) */
             color: #111;
             border: 1px solid rgba(0,0,0,0.08);
-        }
+        }}
 
-        .refs-preview {
+        .refs-preview {{
             padding: 6px 8px;
             border-radius: 10px;
             margin-bottom: 6px;
             background: rgba(255,255,255,0.06);
-        }
+        }}
 
-        .refs-preview-line {
+        .refs-preview-line {{
             opacity: 0.55;
             font-size: 0.90em;
-        }
+        }}
 
-        window.light .refs-preview {
+        window.light .refs-preview {{
             background: rgba(0,0,0,0.06);
-        }
+        }}
 
-        window.light .refs-preview-line {
+        window.light .refs-preview-line {{
             opacity: 0.65;
-        }
+        }}
 
-        .refs-groups {
+        .refs-groups {{
             margin-bottom: 6px;
-        }
+        }}
 
-        .hovered {
+        .hovered {{
             box-shadow: 0 0 6px rgba(0,0,0,0.25);
-        }
+        }}
 
-        .selected {
+        .selected {{
             outline: 2px solid #ff9800;
-        }
+        }}
 
         
-        .code-block {
+        .code-block {{
             background: #1e1e1e;
             border-radius: 8px;
             padding: 12px;
             font-family: monospace;
-        }
+        }}
 
-        window.light .code-block {
+        window.light .code-block {{
             background: #F9F9F9;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-        }
+        }}
 
-        .code-copy-btn {
+        .code-copy-btn {{
             color: white;
-        }
+        }}
 
-        window.light .code-copy-btn{
+        window.light .code-copy-btn {{
             color: #1e1e1e;
-        }
-
-        .attach-edit-on {
-            outline: 2px solid #2ecc71;
-            border-radius: 10px;
-        }
+        }}
         """
         provider = Gtk.CssProvider()
         provider.load_from_data(css.encode())
@@ -700,11 +988,13 @@ class ChatApp(Gtk.Application):
 
     def toggle_theme(self, *_):
         cfg = self.load_config()
-        current = cfg.get("dark_mode", True)
+        current = bool(cfg.get("dark_mode", True))
         new_value = not current
         cfg["dark_mode"] = new_value
         self.save_config(cfg)
+
         self.apply_theme(new_value)
+        self.refresh_visual_theme_only()
 
     # ---------------- INPUT ----------------
 
@@ -775,22 +1065,127 @@ class ChatApp(Gtk.Application):
 
         # Enter davranışın (sende vardı)
         if keyval == Gdk.KEY_Return:
-            # Shift+Enter = newline
             if shift:
                 return False
-            # Enter = send
-            GLib.idle_add(self.send_message, None)
+
+            if getattr(self, "is_generating", False):
+                GLib.idle_add(self.stop_ai_generation)
+            else:
+                GLib.idle_add(self.send_message, None)
             return True
 
         return False
 
-    # ---------------- IMAGE PREVIEW ----------------
+    # ---------------- IMAGE,DOCS PREVIEW AND ATTACH MENU ----------------
+
+    def _measure_text_px(self, widget: Gtk.Widget, text: str) -> int:
+        # widget'in font context'iyle ölçüm yap
+        ctx = widget.get_pango_context()
+        layout = Pango.Layout.new(ctx)
+        layout.set_text(text or "", -1)
+        w, _ = layout.get_pixel_size()
+        return int(w)
 
     def show_image_preview(self, image_path):
         p = str(Path(image_path).resolve())
         if Path(p).exists() and p not in self.pending_images:
             self.pending_images.append(p)
         self.refresh_attachments_preview()
+
+    def _capture_photo_from_script(self):
+        script = Path.home() / ".config" / "scripts" / "screenprint.sh"
+        if not script.exists():
+            GLib.idle_add(self.handle_ai_error, f"Script bulunamadı: {script}")
+            return
+
+        try:
+            # Scriptin stdout'a path basmasını destekliyoruz (en iyi yöntem)
+            p = subprocess.run(
+                [str(script), "only-one"],
+                capture_output=True,
+                text=True
+            )
+
+            if p.returncode != 0:
+                err = (p.stderr or p.stdout or "screen-print failed").strip()
+                GLib.idle_add(self.handle_ai_error, err[:800])
+                return
+
+            out = (p.stdout or "").strip()
+
+            # 1) stdout bir path döndürdüyse onu kullan
+            if out:
+                cand = Path(out).expanduser()
+                if cand.exists():
+                    GLib.idle_add(self.show_image_preview, str(cand))
+                    return
+
+            # 2) stdout boşsa / path değilse: en son oluşan dosyayı bul (fallback)
+            #    (klasörlerini senin scriptine göre değiştir)
+            candidates = []
+            for d in [Path.home() / "Resimler", Path.home() / "Pictures", Path("/tmp")]:
+                if d.exists():
+                    candidates += list(d.glob("screen*.*"))
+                    candidates += list(d.glob("capture*.*"))
+                    candidates += list(d.glob("shot*.*"))
+                    candidates += list(d.glob("*.png"))
+                    candidates += list(d.glob("*.jpg"))
+                    candidates += list(d.glob("*.jpeg"))
+
+            if not candidates:
+                GLib.idle_add(self.handle_ai_error, "Fotoğraf çekildi ama dosya bulunamadı (script path döndürmüyor olabilir).")
+                return
+
+            newest = max(candidates, key=lambda x: x.stat().st_mtime if x.exists() else 0)
+            if newest.exists():
+                GLib.idle_add(self.show_image_preview, str(newest))
+            else:
+                GLib.idle_add(self.handle_ai_error, "Fotoğraf çekildi ama dosya bulunamadı.")
+
+        except Exception as e:
+            GLib.idle_add(self.handle_ai_error, f"Fotoğraf çekme hatası: {e}")
+
+    def open_attach_menu(self, button: Gtk.Button):
+        pop = Gtk.Popover()
+        pop.set_parent(button)
+        pop.set_position(Gtk.PositionType.TOP)
+        pop.set_has_arrow(True)
+        pop.set_autohide(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+
+        btn_photo = Gtk.Button(label=f"📸 {self('o_Take_Photo')}")
+        btn_file  = Gtk.Button(label=f"📄 {self('o_Attach_File')}")
+
+        btn_photo.set_halign(Gtk.Align.FILL)
+        btn_file.set_halign(Gtk.Align.FILL)
+
+        # bubble click'e taşmasın
+        self._consume_click(btn_photo)
+        self._consume_click(btn_file)
+
+        def _photo_clicked(_b):
+            pop.popdown()
+            # UI donmasın diye thread
+            threading.Thread(target=self._capture_photo_from_script, daemon=True).start()
+
+        def _file_clicked(_b):
+            pop.popdown()
+            # senin mevcut dosya seçicini aç
+            GLib.idle_add(self.on_attach_clicked)
+
+        btn_photo.connect("clicked", _photo_clicked)
+        btn_file.connect("clicked", _file_clicked)
+
+        box.append(btn_photo)
+        box.append(btn_file)
+
+        pop.set_child(box)
+        pop.popup()
 
     def on_attach_clicked(self, *_):
         # GTK4 FileDialog ile çoklu seçim
@@ -909,15 +1304,10 @@ class ChatApp(Gtk.Application):
             item.set_vexpand(False)
             item.set_size_request(110, -1)
 
-            file = Gio.File.new_for_path(str(img_path.resolve()))
-            pic = Gtk.Picture.new_for_file(file)
-            pic.set_can_shrink(True)
-            pic.set_keep_aspect_ratio(True)
-            pic.set_content_fit(Gtk.ContentFit.COVER)
-            pic.set_size_request(96, 72)
-            pic.set_hexpand(False)
-            pic.set_vexpand(False)
-            pic.set_halign(Gtk.Align.START)
+            pic_overlay = self.build_zoomable_image_widget(str(img_path.resolve()), 96, 72)
+            pic_overlay.set_hexpand(False)
+            pic_overlay.set_vexpand(False)
+            pic_overlay.set_halign(Gtk.Align.START)
 
             name = Gtk.Label(label=img_path.name)
             name.set_xalign(0)
@@ -928,7 +1318,7 @@ class ChatApp(Gtk.Application):
             name.set_max_width_chars(18)
             name.set_ellipsize(Pango.EllipsizeMode.END)
 
-            item.append(pic)
+            item.append(pic_overlay)
             item.append(name)
 
             # Overlay: sağ üst X
@@ -976,15 +1366,30 @@ class ChatApp(Gtk.Application):
             icon = Gtk.Image.new_from_icon_name("text-x-generic-symbolic")
             chip.append(icon)
 
+
             lab = Gtk.Label(label=p.name)
-            lab.set_xalign(0)
-            lab.set_max_width_chars(26)
-            lab.set_ellipsize(Pango.EllipsizeMode.END)
+            lab.set_xalign(0.0)
             lab.set_single_line_mode(True)
-            lab.set_hexpand(False)
-            lab.set_halign(Gtk.Align.START)
             lab.set_wrap(False)
+            lab.set_ellipsize(Pango.EllipsizeMode.END)
+            lab.set_hexpand(True)
+            lab.set_halign(Gtk.Align.FILL)
             chip.append(lab)
+
+            # ---- CHIP WIDTH: text ölç -> clamp (min/max) ----
+            MIN_PX = 140
+            MAX_PX = 180
+
+            # metnin px genişliği
+            text_px = self._measure_text_px(lab, p.name)
+
+            # icon + spacing + padding + X butonu için pay (biraz cömert bırak)
+            EXTRA = 22 + 6 + 24 + 18   # icon(22) + spacing(6) + x alanı(24) + padding payı(18)
+
+            target = max(MIN_PX, min(MAX_PX, text_px + EXTRA))
+            chip.set_size_request(target, -1)
+
+
 
             # tıkla -> edit toggle
             click = Gtk.GestureClick()
@@ -1080,14 +1485,20 @@ class ChatApp(Gtk.Application):
     # ---------------- AI ERROR / TYPING ----------------
 
     def handle_ai_error(self, error_text):
-        if hasattr(self, "typing_row"):
-            self.chat_box.remove(self.typing_row)
-            del self.typing_row
-            del self.typing_label
+        self.typing_active = False
+        self.stream_active = False
+        self.ai_proc = None
+        self.set_generating_state(False)
+        try:
+            self.typing_row.set_visible(False)
+        except Exception:
+            pass
 
         try:
             with open(self.current_chat, "r", encoding="utf-8") as f:
                 messages = json.load(f) or []
+            cfg = self.load_config()
+            show_usage = bool(cfg.get("show_usage", False))
         except Exception:
             messages = []
 
@@ -1102,40 +1513,43 @@ class ChatApp(Gtk.Application):
         self.load_chat()
         self.scroll_to_bottom()
 
-    def show_typing_indicator(self):
-        self.typing_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.typing_row.set_halign(Gtk.Align.START)
-
-        bubble = Gtk.Box()
-        bubble.add_css_class("bot-bubble")
-
-        self.typing_label = Gtk.Label(label="Düşünüyor")
-        bubble.append(self.typing_label)
-
-        self.typing_row.append(bubble)
-        self.chat_box.append(self.typing_row)
-
-        self.typing_dots = 0
-        GLib.timeout_add(500, self.animate_typing)
-
-        self.scroll_to_bottom()
-
     def animate_typing(self):
-        if not hasattr(self, "typing_label"):
+        if not getattr(self, "typing_active", False):
             return False
+
+        # stream başlayınca noktaları durdur
+        if getattr(self, "stream_active", False):
+            return False
+
         dots = "." * (self.typing_dots % 4)
         self.typing_label.set_text(f"Düşünüyor{dots}")
         self.typing_dots += 1
         return True
 
+    def show_typing_indicator(self):
+        self.stream_active = False
+        self.typing_active = True
+        self.typing_label.set_text("Düşünüyor...")
+        self.typing_row.set_visible(True)
+        self.typing_dots = 0
+        GLib.timeout_add(500, self.animate_typing)
+
     def after_ai_response(self):
-        if hasattr(self, "typing_row"):
-            self.chat_box.remove(self.typing_row)
-            del self.typing_row
-            del self.typing_label
+        self.typing_active = False
+        self.stream_active = False
+        self.ai_proc = None
+        self.ai_stop_requested = False
+        self.set_generating_state(False)
+
+        try:
+            self.typing_row.set_visible(False)
+        except Exception:
+            pass
 
         self.load_chat()
         self.scroll_to_bottom()
+        self.streaming_row = None
+        self.streaming_label = None
 
     # ---------------- MODELS LIST ----------------
 
@@ -1147,7 +1561,7 @@ class ChatApp(Gtk.Application):
 
         self.models_header.set_visible(True)
         self.models_list.set_visible(self.models_list_open)
-        self.models_toggle_btn.set_label("AI models ▾" if self.models_list_open else "AI models ▸")
+        self.models_toggle_btn.set_label(f"{self('o_AI_Models')} ▾" if self.models_list_open else f"{self('o_AI_Models')} ▸")
 
     def on_model_row_activated(self, listbox, row):
         if not row:
@@ -1335,7 +1749,7 @@ class ChatApp(Gtk.Application):
             box.append(label)
 
             trash_btn = Gtk.Button(label="🗑")
-            trash_btn.set_tooltip_text("Modeli sil")
+            self.bind_i18n(trash_btn, "tooltip", "o_Delete_Model")
             trash_btn.set_size_request(30, 30)
             trash_btn.add_css_class("flat")
             trash_btn.connect("clicked", self.confirm_delete_model, model_id)
@@ -1369,6 +1783,71 @@ class ChatApp(Gtk.Application):
         entry.set_placeholder_text("ör: my_chat")
         entry.set_text(file_path.stem)
 
+        key_controller = Gtk.EventControllerKey()
+
+        def on_key_pressed(_controller, keyval, _keycode, state):
+            ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
+            # Ctrl değilse bırak GTK normal davransın
+            if not ctrl:
+                return False
+
+            display = Gdk.Display.get_default()
+            if not display:
+                return False
+            clipboard = display.get_clipboard()
+
+            # Ctrl+A: hepsini seç
+            if keyval in (Gdk.KEY_a, Gdk.KEY_A):
+                entry.select_region(0, -1)
+                return True
+
+            # Ctrl+V: yapıştır
+            if keyval in (Gdk.KEY_v, Gdk.KEY_V):
+                def on_text(cb, res):
+                    try:
+                        text = cb.read_text_finish(res) or ""
+                    except Exception:
+                        text = ""
+                    if not text:
+                        return
+
+                    # seçili alan varsa sil
+                    sel = entry.get_selection_bounds()
+                    if sel:
+                        s, e = sel
+                        entry.delete_text(s, e)
+
+                    pos = entry.get_position()
+                    entry.insert_text(text, pos)
+                    entry.set_position(pos + len(text))
+
+                clipboard.read_text_async(None, on_text)
+                return True
+
+            # Ctrl+X: kes (seçiliyse seçiliyi, değilse tümünü)
+            if keyval in (Gdk.KEY_x, Gdk.KEY_X):
+                cur = entry.get_text() or ""
+                if not cur:
+                    return True
+
+                sel = entry.get_selection_bounds()
+                if sel:
+                    s, e = sel
+                    cut = cur[s:e]
+                    clipboard.set(cut)
+                    entry.delete_text(s, e)
+                else:
+                    clipboard.set(cur)
+                    entry.set_text("")
+
+                return True
+
+            return False
+
+        key_controller.connect("key-pressed", on_key_pressed)
+        entry.add_controller(key_controller)
+
         def do_rename(*_):
             self.rename_chat_file(file_path, entry.get_text(), rename_pop)
 
@@ -1383,8 +1862,8 @@ class ChatApp(Gtk.Application):
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_halign(Gtk.Align.END)
 
-        cancel_btn = Gtk.Button(label="İptal")
-        save_btn = Gtk.Button(label="Kaydet")
+        cancel_btn = Gtk.Button(label=f"{self('o_Cancel')}")
+        save_btn = Gtk.Button(label=f"{self('o_Save')}")
         save_btn.add_css_class("suggested-action")
 
         cancel_btn.connect("clicked", lambda *_: rename_pop.popdown())
@@ -1472,9 +1951,544 @@ class ChatApp(Gtk.Application):
         self.save_config(cfg)
         self.load_chat_list()
 
-    # ---------------- API KEY DIALOG ----------------
+    # ---------------- SETTINGS ----------------
 
-    def open_key_dialog(self, button):
+    def refresh_all_i18n(self, root=None):
+        if root is None:
+            root = getattr(self, "win", None)
+
+        if root is None:
+            return
+
+        self.apply_i18n_to_widget(root)
+
+        try:
+            child = root.get_first_child()
+        except Exception:
+            child = None
+
+        while child is not None:
+            self.refresh_all_i18n(child)
+            try:
+                child = child.get_next_sibling()
+            except Exception:
+                break
+
+    def refresh_dynamic_i18n_texts(self):
+        try:
+            self.models_toggle_btn.set_label(
+                f"{self('o_AI_Models')} ▾" if self.models_list_open else f"{self('o_AI_Models')} ▸"
+            )
+        except Exception:
+            pass
+
+        try:
+            self.chats_toggle_btn.set_label(
+                f"{self('o_Chats')} ▾" if self.chats_list_open else f"{self('o_Chats')} ▸"
+            )
+        except Exception:
+            pass
+
+        try:
+            if getattr(self, "typing_active", False):
+                self.typing_label.set_text(f"{self('o_Thinking')}...")
+            else:
+                self.typing_label.set_text(self("o_Thinking"))
+        except Exception:
+            pass
+
+        try:
+            self.set_generating_state(self.is_generating)
+        except Exception:
+            pass
+
+
+    def bind_i18n(self, widget, field: str, key: str):
+        """
+        field:
+          - label
+          - tooltip
+          - title
+          - text
+          - placeholder
+        """
+        setattr(widget, f"_i18n_{field}_key", key)
+        self.apply_i18n_to_widget(widget)
+
+    def apply_i18n_to_widget(self, widget):
+        try:
+            label_key = getattr(widget, "_i18n_label_key", None)
+            if label_key:
+                text = self(str(label_key))
+                if hasattr(widget, "set_label"):
+                    widget.set_label(text)
+        except Exception:
+            pass
+
+        try:
+            tooltip_key = getattr(widget, "_i18n_tooltip_key", None)
+            if tooltip_key:
+                text = self(str(tooltip_key))
+                if hasattr(widget, "set_tooltip_text"):
+                    widget.set_tooltip_text(text)
+        except Exception:
+            pass
+
+        try:
+            title_key = getattr(widget, "_i18n_title_key", None)
+            if title_key:
+                text = self(str(title_key))
+                if hasattr(widget, "set_title"):
+                    widget.set_title(text)
+        except Exception:
+            pass
+
+        try:
+            text_key = getattr(widget, "_i18n_text_key", None)
+            if text_key:
+                text = self(str(text_key))
+                if hasattr(widget, "set_text"):
+                    widget.set_text(text)
+        except Exception:
+            pass
+
+        try:
+            placeholder_key = getattr(widget, "_i18n_placeholder_key", None)
+            if placeholder_key:
+                text = self(str(placeholder_key))
+                if hasattr(widget, "set_placeholder_text"):
+                    widget.set_placeholder_text(text)
+        except Exception:
+            pass
+
+    def refresh_ui_texts(self):
+        self.refresh_all_i18n()
+        self.refresh_dynamic_i18n_texts()
+
+        try:
+            self.load_chat_list()
+        except Exception:
+            pass
+
+        try:
+            self.load_models_list()
+        except Exception:
+            pass
+
+        try:
+            self.load_chat()
+        except Exception:
+            pass
+
+    def open_language_dialog(self):
+        dialog = Gtk.Dialog(title=self("Dil"), transient_for=self.win)
+        dialog.set_modal(True)
+
+        content = dialog.get_content_area()
+        content.set_spacing(8)
+        content.set_margin_top(10)
+        content.set_margin_bottom(10)
+        content.set_margin_start(10)
+        content.set_margin_end(10)
+
+        current_lang = self.get_ui_language()
+        langs = self.get_available_ui_languages()
+
+        label = Gtk.Label(label=self("Dil"))
+        label.set_xalign(0)
+        content.append(label)
+
+        combo = Gtk.ComboBoxText()
+        for lang in langs:
+            combo.append(lang, lang)
+        combo.set_active_id(current_lang)
+        content.append(combo)
+
+        cancel_btn = Gtk.Button()
+        self.bind_i18n(cancel_btn, "label", "o_Cancel")
+        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+
+        save_btn = Gtk.Button()
+        self.bind_i18n(save_btn, "label", "o_Save")
+        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
+
+        def on_response(d, resp):
+            if resp == Gtk.ResponseType.OK:
+                chosen = combo.get_active_id()
+                if chosen:
+                    self.set_ui_language(chosen)
+                    self.refresh_ui_texts()
+            d.close()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+
+    def _get_chat_bg_image_path(self) -> str:
+        cfg = self.load_config()
+        return str(cfg.get("chat_bg_image", "") or "").strip()
+
+    def _save_chat_bg_image_path(self, path: str):
+        cfg = self.load_config()
+        cfg["chat_bg_image"] = str(path or "").strip()
+        self.save_config(cfg)
+
+    def _reset_chat_bg_image(self):
+        cfg = self.load_config()
+        cfg["chat_bg_image"] = ""
+        self.save_config(cfg)
+
+    def ensure_color_configs(self):
+        cfg = self.load_config()
+        changed = False
+
+        if not isinstance(cfg.get("custom_colors_dark"), dict):
+            cfg["custom_colors_dark"] = dict(DEFAULT_CUSTOM_COLORS_DARK)
+            changed = True
+
+        if not isinstance(cfg.get("custom_colors_light"), dict):
+            cfg["custom_colors_light"] = dict(DEFAULT_CUSTOM_COLORS_LIGHT)
+            changed = True
+
+        if "chat_bg_image" not in cfg:
+            cfg["chat_bg_image"] = ""
+            changed = True
+
+        if changed:
+            self.save_config(cfg)
+
+    def refresh_visual_theme_only(self):
+        self.apply_css()
+        self.apply_theme(self.load_config().get("dark_mode", True))
+
+        try:
+            self.win.queue_draw()
+        except Exception:
+            pass
+
+        for w in [
+            getattr(self, "win", None),
+            getattr(self, "sidebar", None),
+            getattr(self, "scroll", None),
+            getattr(self, "content_box", None),
+            getattr(self, "chat_box", None),
+            getattr(self, "textview", None),
+            getattr(self, "text_scroll", None),
+            getattr(self, "preview_row", None),
+            getattr(self, "preview_hbox", None),
+            getattr(self, "selection_row", None),
+        ]:
+            if w is not None:
+                try:
+                    w.queue_draw()
+                except Exception:
+                    pass
+
+    def refresh_entire_ui_theme(self):
+        self.refresh_visual_theme_only()
+        self.refresh_ui_texts()
+        self.load_chat()
+        self.load_chat_list()
+        self.load_models_list()
+        self.refresh_attachments_preview()
+
+        GLib.idle_add(self.scroll_to_bottom, True)
+
+    def open_personalization_dialog(self):
+        cfg = self.load_config()
+        is_dark = bool(cfg.get("dark_mode", True))
+        mode_name = "Dark Mode" if is_dark else "Light Mode"
+
+        dialog = Gtk.Dialog(title=f"Kişiselleştirme ({mode_name})", transient_for=self.win)
+        dialog.set_modal(True)
+        dialog.set_default_size(460, 340)
+
+        content = dialog.get_content_area()
+        content.set_spacing(8)
+        content.set_margin_top(10)
+        content.set_margin_bottom(10)
+        content.set_margin_start(10)
+        content.set_margin_end(10)
+
+        colors = self._get_theme_colors()
+        rows = {}
+
+        def on_pick_bg(*_):
+            try:
+                dialog_file = Gtk.FileDialog()
+
+                img_filter = Gtk.FileFilter()
+                img_filter.set_name("Images")
+                img_filter.add_mime_type("image/png")
+                img_filter.add_mime_type("image/jpeg")
+                img_filter.add_mime_type("image/webp")
+                img_filter.add_mime_type("image/gif")
+                img_filter.add_mime_type("image/bmp")
+
+                any_filter = Gtk.FileFilter()
+                any_filter.set_name("All files")
+                any_filter.add_pattern("*")
+
+                flist = Gio.ListStore.new(Gtk.FileFilter)
+                flist.append(img_filter)
+                flist.append(any_filter)
+                dialog_file.set_filters(flist)
+
+                def on_done(dlg, res):
+                    try:
+                        gfile = dlg.open_finish(res)
+                    except Exception:
+                        return
+
+                    if not gfile:
+                        return
+
+                    path = gfile.get_path()
+                    if path:
+                        bg_path_entry.set_text(path)
+
+                dialog_file.open(self.win, None, on_done)
+            except Exception:
+                pass
+
+        def on_clear_bg(*_):
+            bg_path_entry.set_text("")
+
+        def add_row(label_text, key):
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+            lab = Gtk.Label(label=label_text)
+            lab.set_xalign(0)
+            lab.set_hexpand(True)
+
+            entry = Gtk.Entry()
+            entry.set_text(colors[key])
+            entry.set_placeholder_text("#rrggbb")
+
+            row.append(lab)
+            row.append(entry)
+            content.append(row)
+
+            rows[key] = entry
+
+        add_row("Genel arkaplan", "window_bg")
+        add_row("Input arkaplan", "input_bg")
+        add_row("Kullanıcı balon arkaplan", "user_bg")
+        add_row("Kullanıcı yazı rengi", "user_text")
+        add_row("Bot balon arkaplan", "bot_bg")
+        add_row("Bot yazı rengi", "bot_text")
+        add_row("Sidebar yazı rengi", "sidebar_text")
+
+        hint = Gtk.Label(
+            label=(
+                f"Şu anda {mode_name} renklerini düzenliyorsun.\n"
+                "Hex formatı kullan: örn #303643"
+            )
+        )
+        hint.set_xalign(0)
+        hint.set_wrap(True)
+        hint.add_css_class("dim-label")
+        content.append(hint)
+
+        bg_path_label = Gtk.Label(label="Chat arkaplan resmi")
+        bg_path_label.set_xalign(0)
+        content.append(bg_path_label)
+
+        bg_path_controls = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        bg_path_entry = Gtk.Entry()
+        bg_path_entry.set_hexpand(True)
+        bg_path_entry.set_placeholder_text("/dosya-yolu/resim.png")
+        bg_path_entry.set_text(self._get_chat_bg_image_path())
+
+        bg_pick_btn = Gtk.Button(label="Seç")
+        bg_clear_btn = Gtk.Button(label="Temizle")
+        bg_pick_btn.connect("clicked", on_pick_bg)
+        bg_clear_btn.connect("clicked", on_clear_bg)
+
+        bg_path_controls.append(bg_path_entry)
+        bg_path_controls.append(bg_pick_btn)
+        bg_path_controls.append(bg_clear_btn)
+        content.append(bg_path_controls)
+
+
+        reset_btn = Gtk.Button(label="Varsayılana dön")
+        content.append(reset_btn)
+
+        cancel_btn = Gtk.Button()
+        self.bind_i18n(cancel_btn, "label", "o_Cancel")
+        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+
+        save_btn = Gtk.Button()
+        self.bind_i18n(save_btn, "label", "o_Save")
+        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
+
+        def valid_hex(s: str) -> bool:
+            s = (s or "").strip()
+            if len(s) != 7 or not s.startswith("#"):
+                return False
+            try:
+                int(s[1:], 16)
+                return True
+            except Exception:
+                return False
+
+        def on_reset(*_):
+            defaults = self._get_default_theme_colors(is_dark)
+            for key, entry in rows.items():
+                entry.set_text(defaults[key])
+            bg_path_entry.set_text("")
+
+        reset_btn.connect("clicked", on_reset)
+
+        def on_response(d, resp):
+            if resp == Gtk.ResponseType.OK:
+                new_colors = {}
+                for key, entry in rows.items():
+                    val = entry.get_text().strip()
+                    if not valid_hex(val):
+                        return
+                    new_colors[key] = val
+
+                bg_path = bg_path_entry.get_text().strip()
+                if bg_path:
+                    try:
+                        p = Path(bg_path).expanduser().resolve()
+                        bg_path = str(p)
+                    except Exception:
+                        bg_path = ""
+
+                self._save_theme_colors(new_colors)
+                self._save_chat_bg_image_path(bg_path)
+                self.refresh_entire_ui_theme()
+
+            d.close()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def open_style_dialog(self):
+        dialog = Gtk.Dialog(title="Cevap Tarzı", transient_for=self.win)
+        dialog.set_modal(True)
+
+        content = dialog.get_content_area()
+        content.set_spacing(8)
+
+        entry = Gtk.Entry()
+        entry.set_placeholder_text("Örn: Samimi ve esprili konuş")
+
+        cfg = self.load_config()
+        entry.set_text(cfg.get("response_style", "") or "")
+
+        content.append(entry)
+
+        cancel_btn = Gtk.Button()
+        self.bind_i18n(cancel_btn, "label", "o_Cancel")
+        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+
+        save_btn = Gtk.Button()
+        self.bind_i18n(save_btn, "label", "o_Save")
+        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
+
+        # Enter → Kaydet
+        entry.connect("activate", lambda *_: dialog.response(Gtk.ResponseType.OK))
+
+        key_controller = Gtk.EventControllerKey()
+
+        def on_key_pressed(_controller, keyval, _keycode, state):
+
+            ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
+            display = Gdk.Display.get_default()
+            clipboard = display.get_clipboard() if display else None
+
+            # Ctrl+A → Hepsini seç
+            if ctrl and keyval in (Gdk.KEY_a, Gdk.KEY_A):
+                entry.select_region(0, -1)
+                return True
+
+            # Ctrl+V → Yapıştır
+            if ctrl and keyval in (Gdk.KEY_v, Gdk.KEY_V):
+                if not clipboard:
+                    return False
+
+                def on_text(cb, res):
+                    try:
+                        text = cb.read_text_finish(res) or ""
+                    except Exception:
+                        text = ""
+
+                    if not text:
+                        return
+
+                    sel = entry.get_selection_bounds()
+                    if sel:
+                        s, e = sel
+                        entry.delete_text(s, e)
+
+                    pos = entry.get_position()
+                    entry.insert_text(text, pos)
+                    entry.set_position(pos + len(text))
+
+                clipboard.read_text_async(None, on_text)
+                return True
+
+            # Ctrl+X → Kes
+            if ctrl and keyval in (Gdk.KEY_x, Gdk.KEY_X):
+
+                if not clipboard:
+                    return True
+
+                text = entry.get_text() or ""
+                if not text:
+                    return True
+
+                sel = entry.get_selection_bounds()
+
+                if sel:
+                    s, e = sel
+                    cut = text[s:e]
+                    clipboard.set(cut)
+                    entry.delete_text(s, e)
+                else:
+                    clipboard.set(text)
+                    entry.set_text("")
+
+                return True
+
+            # Enter → Kaydet
+            if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+                dialog.response(Gtk.ResponseType.OK)
+                return True
+
+            return False
+
+        key_controller.connect("key-pressed", on_key_pressed)
+        entry.add_controller(key_controller)
+
+        def on_response(d, resp):
+            if resp == Gtk.ResponseType.OK:
+                cfg2 = self.load_config()
+                cfg2["response_style"] = entry.get_text().strip()
+                self.save_config(cfg2)
+
+            d.close()
+
+        dialog.connect("response", on_response)
+
+        dialog.show()
+
+        # Fokus ver ama seçim yapma
+        def focus_entry():
+            entry.grab_focus()
+            entry.set_position(-1)   # cursor sona gider
+            entry.select_region(0, 0)  # seçim yok
+            return False
+
+        GLib.idle_add(focus_entry)    
+
+
+    def open_key_dialog(self, _button=None):
         dialog = Gtk.Dialog()
         dialog.set_transient_for(self.win)
         dialog.set_modal(True)
@@ -1486,9 +2500,18 @@ class ChatApp(Gtk.Application):
         entry.set_placeholder_text("OpenRouter API Key girin...")
         entry.set_visibility(False)
         content.append(entry)
+        # Ctrl+V ile yapıştırmayı garanti et
+        key_controller = Gtk.EventControllerKey()
 
-        dialog.add_button("İptal", Gtk.ResponseType.CANCEL)
-        dialog.add_button("Kaydet", Gtk.ResponseType.OK)
+
+        cancel_btn = Gtk.Button()
+        self.bind_i18n(cancel_btn, "label", "o_Cancel")
+        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+
+        save_btn = Gtk.Button()
+        self.bind_i18n(save_btn, "label", "o_Save")
+        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
+
 
         def on_response(dialog, response):
             if response == Gtk.ResponseType.OK:
@@ -1502,9 +2525,70 @@ class ChatApp(Gtk.Application):
         dialog.connect("response", on_response)
         dialog.present()
 
+        def on_key_pressed(controller, keyval, keycode, state):
+            ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
+            # hem v hem V yakala
+            if ctrl and keyval in (Gdk.KEY_v, Gdk.KEY_V):
+                display = Gdk.Display.get_default()
+                if not display:
+                    return False
+
+                clipboard = display.get_clipboard()
+
+                def on_text(cb, res):
+                    try:
+                        text = cb.read_text_finish(res) or ""
+                    except Exception:
+                        text = ""
+                    if text:
+                        entry.set_text(text.strip())
+
+                clipboard.read_text_async(None, on_text)
+                return True
+
+            return False
+
+        key_controller.connect("key-pressed", on_key_pressed)
+        entry.add_controller(key_controller)
+
+
+    def open_settings_menu(self, button):
+        pop = Gtk.Popover()
+        pop.set_parent(button)
+        pop.set_position(Gtk.PositionType.TOP)
+        pop.set_has_arrow(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+
+        api_btn = Gtk.Button(label=f"🔑 {self('o_OpenRouter_API_Key')}")
+        api_btn.set_halign(Gtk.Align.FILL)
+        api_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_key_dialog(None)))
+        box.append(api_btn)
+
+        style_btn = Gtk.Button(label=f"🧠 {self('o_Response_Style')}")
+        style_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_style_dialog()))
+        box.append(style_btn)
+
+        personalization_btn = Gtk.Button(label=f"🎨 {self('o_Personalization')}")
+        personalization_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_personalization_dialog()))
+        box.append(personalization_btn)
+
+        lang_btn = Gtk.Button(label=f"{self('o_Language')}")
+        lang_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_language_dialog()))
+        box.append(lang_btn)
+
+        pop.set_child(box)
+        pop.popup()
+
     # ---------------- CHAT LIST ----------------
 
     def load_chat_list(self):
+        self.streaming_label = None
         while True:
             row = self.chat_list.get_first_child()
             if not row:
@@ -1546,7 +2630,7 @@ class ChatApp(Gtk.Application):
             box.append(label)
 
             more_btn = Gtk.Button(label="⋯")
-            more_btn.set_tooltip_text("Seçenekler")
+            self.bind_i18n(more_btn, "tooltip", "o_Options")
             more_btn.set_size_request(30, 30)
             more_btn.add_css_class("flat")
             box.append(more_btn)
@@ -1565,7 +2649,7 @@ class ChatApp(Gtk.Application):
 
             # Pin toggle
             is_pinned = file.name in pinned
-            pin_item = Gtk.Button(label=("Sabiti kaldır" if is_pinned else "Sabitle"))
+            pin_item = Gtk.Button(label=(f"{self('o_Unpin')}" if is_pinned else f"{self('o_Pin')}"))
             pin_item.set_halign(Gtk.Align.FILL)
 
             def _toggle_pin(_btn, f=file, p=popover):
@@ -1576,7 +2660,7 @@ class ChatApp(Gtk.Application):
             pop_box.append(pin_item)
 
             # Rename
-            rename_item = Gtk.Button(label="İsmi değiştir")
+            rename_item = Gtk.Button(label=f"{self('o_Rename')}")
             rename_item.set_halign(Gtk.Align.FILL)
             rename_item.connect(
                 "clicked",
@@ -1585,7 +2669,7 @@ class ChatApp(Gtk.Application):
             pop_box.append(rename_item)
 
             # Delete
-            del_item = Gtk.Button(label="Chat'i sil")
+            del_item = Gtk.Button(label=f"{self('o_Delete_Chat')}")
             del_item.set_halign(Gtk.Align.FILL)
             del_item.connect("clicked", lambda *_, f=file, p=popover: (p.popdown(), self.delete_chat(None, f)))
             pop_box.append(del_item)
@@ -1662,10 +2746,9 @@ class ChatApp(Gtk.Application):
     def apply_chats_visibility(self):
         if not getattr(self, "sidebar_expanded", True):
             self.chat_list.set_visible(False)
-            self.chats_toggle_btn.set_label("Chats ▾" if self.chats_list_open else "Chats ▸")
             return
         self.chat_list.set_visible(self.chats_list_open)
-        self.chats_toggle_btn.set_label("Chats ▾" if self.chats_list_open else "Chats ▸")
+        self.chats_toggle_btn.set_label(f"{self('o_Chats')} ▾" if self.chats_list_open else f"{self('o_Chats')} ▸")
 
     def toggle_chats_list(self, *_):
         self.chats_list_open = not self.chats_list_open
@@ -1675,7 +2758,9 @@ class ChatApp(Gtk.Application):
         if self.sidebar_expanded:
             self.sidebar.set_size_request(60, -1)
             self.sidebar_expanded = False
-            self.chats_toggle_btn.set_visible(False)
+            self.sidebar_scroll.set_visible(False)
+            self.new_btn_sidebar.set_visible(True)
+            self.sidebar_spacer.set_visible(True)
             self.apply_chats_visibility()
             self.apply_models_visibility()
         else:
@@ -1683,7 +2768,9 @@ class ChatApp(Gtk.Application):
             self.sidebar.set_hexpand(False)
             self.sidebar.set_vexpand(True)
             self.sidebar_expanded = True
-            self.chats_toggle_btn.set_visible(True)
+            self.sidebar_scroll.set_visible(True)
+            self.new_btn_sidebar.set_visible(False)
+            self.sidebar_spacer.set_visible(False)
             self.apply_chats_visibility()
             self.apply_models_visibility()
 
@@ -1981,6 +3068,18 @@ class ChatApp(Gtk.Application):
         self.load_chat()
 
     def load_chat(self):
+        # Typing indicator varsa, önce onu çıkarıp kenarda tutacağız (silmek yok)
+        kept_typing_row = None
+        if getattr(self, "typing_active", False) and hasattr(self, "typing_row"):
+            try:
+                kept_typing_row = self.typing_row
+                # container’dan çıkar ama objeyi öldürme
+                if kept_typing_row.get_parent() is self.chat_box:
+                    self.chat_box.remove(kept_typing_row)
+            except Exception:
+                kept_typing_row = None
+
+        # normal temizleme (typing hariç her şeyi kaldır)
         while True:
             child = self.chat_box.get_first_child()
             if not child:
@@ -1989,6 +3088,9 @@ class ChatApp(Gtk.Application):
 
         with open(self.current_chat, "r", encoding="utf-8") as f:
             messages = json.load(f) or []
+
+        cfg = self.load_config()
+        show_usage = bool(cfg.get("show_usage", False))
 
         for i, msg in enumerate(messages):
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -2045,8 +3147,8 @@ class ChatApp(Gtk.Application):
 
                 bubble.append(outer)
 
-            if msg.get("content"):
-                content = msg["content"]
+            if "content" in msg:
+                content = msg.get("content") or ""
                 title_block = self.extract_title_block(content)
                 copy_block = self.extract_copy_block(content)
                 apply_block = self.extract_apply_block(content)
@@ -2081,7 +3183,7 @@ class ChatApp(Gtk.Application):
                     spacer.set_hexpand(True)
                     top_row.append(spacer)
 
-                    copy_btn = Gtk.Button(label="Kopyala")
+                    copy_btn = Gtk.Button(label=f"{self('o_Copy')}")
                     copy_btn.add_css_class("flat")
                     copy_btn.add_css_class("code-copy-btn")
                     copy_btn.set_halign(Gtk.Align.END)
@@ -2120,16 +3222,21 @@ class ChatApp(Gtk.Application):
                     label.set_hexpand(False)
 
                     bubble.append(label)
+                    # Eğer bu mesaj streaming placeholder ise, canlı güncelleme bu label'a yazılsın
+                    if msg.get("role") != "user" and msg.get("streaming"):
+                        self.streaming_label = label
+                        self.streaming_row = row
+
+                        # içerik henüz yoksa boş balonu gösterme
+                        if not show_text.strip():
+                            row.set_visible(False)
 
             # Tekli image (legacy)
             if msg.get("image"):
                 img_path = Path(msg["image"])
                 if img_path.exists():
-                    file = Gio.File.new_for_path(str(img_path))
-                    pic = Gtk.Picture.new_for_file(file)
-                    pic.set_content_fit(Gtk.ContentFit.CONTAIN)
-                    pic.set_size_request(120, 80)
-                    bubble.append(pic)
+                    pic_overlay = self.build_zoomable_image_widget(str(img_path), 120, 80)
+                    bubble.append(pic_overlay)
 
             # Çoklu images (yeni)
             imgs = msg.get("images")
@@ -2141,13 +3248,9 @@ class ChatApp(Gtk.Application):
                     p = Path(str(ip))
                     if not p.exists():
                         continue
-                    file = Gio.File.new_for_path(str(p))
-                    pic = Gtk.Picture.new_for_file(file)
-                    pic.set_can_shrink(True)
-                    pic.set_keep_aspect_ratio(True)
-                    pic.set_content_fit(Gtk.ContentFit.COVER)
-                    pic.set_size_request(120, 80)
-                    row_imgs.append(pic)
+
+                    pic_overlay = self.build_zoomable_image_widget(str(p), 120, 80)
+                    row_imgs.append(pic_overlay)
 
                 bubble.append(row_imgs)
 
@@ -2177,6 +3280,21 @@ class ChatApp(Gtk.Application):
                     files_box.append(chip)
 
                 bubble.append(files_box)
+
+            u = msg.get("usage")
+            if show_usage and isinstance(u, dict):
+                p = int(u.get("prompt_tokens", 0) or 0)
+                c = int(u.get("completion_tokens", 0) or 0)
+                t = int(u.get("total_tokens", 0) or 0)
+
+                usage_txt = f"Girdi token: {p} | Çıktı token: {c} | Toplam: {t}"
+
+                usage_label = Gtk.Label(label=usage_txt)
+                usage_label.set_xalign(0)
+                usage_label.set_wrap(True)
+                usage_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                usage_label.add_css_class("refs-preview-line")
+                bubble.append(usage_label)
 
             if msg.get("role") == "user":
                 bubble.add_css_class("user-bubble")
@@ -2245,11 +3363,11 @@ class ChatApp(Gtk.Application):
                             btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
                             btn_row.set_halign(Gtk.Align.START)
 
-                            apply_btn = Gtk.Button(label="Uygula")
+                            apply_btn = Gtk.Button(label=f"{self('o_Apply')}")
                             apply_btn.add_css_class("suggested-action")
                             self._consume_click(apply_btn)
 
-                            reject_btn = Gtk.Button(label="Reddet")
+                            reject_btn = Gtk.Button(label=f"{self('o_Reject')}")
                             reject_btn.add_css_class("flat")
                             self._consume_click(reject_btn)
 
@@ -2338,6 +3456,14 @@ class ChatApp(Gtk.Application):
             row.append(wrapper)
             self.chat_box.append(row)
 
+            # AI düşünüyorsa typing satırını en alta geri ekle
+            if getattr(self, "typing_active", False):
+                if kept_typing_row is not None:
+                    self.chat_box.append(kept_typing_row)
+                else:
+                    # typing_row yoksa güvenli fallback
+                    self.show_typing_indicator()
+
         GLib.idle_add(self.scroll_to_bottom)
 
     def on_message_clicked(self, index):
@@ -2363,7 +3489,7 @@ class ChatApp(Gtk.Application):
             self.selection_row.set_opacity(0.0)
             self.selection_row.set_sensitive(False)
         else:
-            self.selection_label.set_text(f"{len(self.selected_indexes)} mesaj referans seçildi")
+            self.selection_label.set_text(f"{len(self.selected_indexes)} {self('o_Reference_Message')}")
             self.selection_row.set_opacity(1.0)
             self.selection_row.set_sensitive(True)
 
@@ -2431,7 +3557,7 @@ class ChatApp(Gtk.Application):
             self._voice_proc = None
 
             self.mic_btn.set_label("🎙️")
-            self.mic_btn.set_tooltip_text("Konuşarak yaz (başlat/durdur)")
+            self.bind_i18n(self.mic_btn, "tooltip", "o_Microphone")
 
             # transcribe arka planda
             threading.Thread(target=self._transcribe_last_audio, daemon=True).start()
@@ -2466,40 +3592,6 @@ class ChatApp(Gtk.Application):
 
         self.mic_btn.set_label("⏹")
         self.mic_btn.set_tooltip_text("Kaydı durdur")
-
-    def _record_wav_proc(self, out_path: Path, samplerate=16000, channels=1):
-        # PipeWire varsa pw-record kullan, yoksa arecord
-        pw = shutil.which("pw-record")
-        ar = shutil.which("arecord")
-
-        if pw:
-            # pw-record --rate 16000 --channels 1 out.wav
-            cmd = [pw, "--rate", str(samplerate), "--channels", str(channels), str(out_path)]
-        elif ar:
-            # arecord -f S16_LE -r 16000 -c 1 out.wav
-            cmd = [ar, "-f", "S16_LE", "-r", str(samplerate), "-c", str(channels), str(out_path)]
-        else:
-            raise RuntimeError("pw-record veya arecord bulunamadı")
-
-        self._voice_proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
-
-        # stop flag gelene kadar bekle
-        while not self._rec_stop.is_set():
-            GLib.usleep(50_000)  # 50ms
-
-        # durdur
-        try:
-            self._voice_proc.terminate()
-        except Exception:
-            pass
-
-        try:
-            self._voice_proc.wait(timeout=2)
-        except Exception:
-            try:
-                self._voice_proc.kill()
-            except Exception:
-                pass
 
     def _append_to_input(self, text: str):
         buf = self.textview.get_buffer()
@@ -2701,48 +3793,75 @@ class ChatApp(Gtk.Application):
         except Exception:
             return
 
-    def apply_request_yes(self, req: dict):
-        """
-        req örneği:
-          {
-            "path": "/home/bob/capture-ai/ui.py",
-            "find": "def on_attach_clicked",
-            "mode": "before",          # before|after|replace
-            "text": "...\n"
-          }
-        """
-        path = str(req.get("path") or "").strip()
-        find = str(req.get("find") or "")
-        mode = str(req.get("mode") or "").strip().lower()
-        text = str(req.get("text") or "")
+    # ---------------- STOP GENERATE -----------------
 
-        # temel doğrulamalar
-        if not path:
-            GLib.idle_add(self.apply_failed_to_input, "missing path")
-            return
-        if not find:
-            GLib.idle_add(self.apply_failed_to_input, "missing find (anchor) string")
-            return
-        if mode not in ("before", "after", "replace"):
-            GLib.idle_add(self.apply_failed_to_input, f"invalid mode: {mode}")
-            return
-        if text == "":
-            GLib.idle_add(self.apply_failed_to_input, "missing text")
-            return
+    def stop_ai_generation(self):
+        self.ai_stop_requested = True
 
-        ok, err = self._apply_edit_op(path, find, mode, text)
-        if not ok:
-            GLib.idle_add(self.apply_failed_to_input, err)
-            return
+        proc = getattr(self, "ai_proc", None)
+        if proc is not None:
+            try:
+                proc.terminate()
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
 
-        # Başarılı olunca istersen input’a kısa bilgi de basabilirsin:
-        # (chat'e yazma yok)
-        GLib.idle_add(self._append_to_input, f"✅ Applied to {Path(path).name}")
+        self.typing_active = False
+        self.stream_active = False
 
+        try:
+            self.typing_row.set_visible(False)
+        except Exception:
+            pass
 
-    def apply_request_no(self):
-        # hiçbir şey yapma; input'a da yazmak istemiyorsan boş bırak
-        return
+        self.set_generating_state(False)
+
+        # Eğer streaming placeholder boş kaldıysa temizle
+        try:
+            with open(self.current_chat, "r", encoding="utf-8") as f:
+                messages = json.load(f) or []
+
+            changed = False
+            if messages and isinstance(messages[-1], dict):
+                last = messages[-1]
+                if last.get("role") in ("bot", "assistant") and last.get("streaming"):
+                    content = (last.get("content") or "").strip()
+                    if not content:
+                        messages.pop()
+                        changed = True
+                    else:
+                        last.pop("streaming", None)
+                        changed = True
+
+            if changed:
+                with open(self.current_chat, "w", encoding="utf-8") as f:
+                    json.dump(messages, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+        self.load_chat()
+        self.streaming_row = None
+        self.streaming_label = None
+        self.scroll_to_bottom(force=True)
+
+    def on_send_button_clicked(self, *_):
+        if getattr(self, "is_generating", False):
+            self.stop_ai_generation()
+        else:
+            self.send_message(None)
+
+    def set_generating_state(self, generating: bool):
+        self.is_generating = bool(generating)
+
+        if hasattr(self, "send_btn") and self.send_btn:
+            if self.is_generating:
+                self.send_btn.set_label("☐")
+                self.bind_i18n(self.send_btn, "tooltip", "o_Stop_Button")
+            else:
+                self.send_btn.set_label("↑")
+                self.bind_i18n(self.send_btn, "tooltip", "o_Send_Button")
 
     # ---------------- SEND / CALL AI ----------------
 
@@ -2822,6 +3941,9 @@ class ChatApp(Gtk.Application):
             new_message["refs_groups"] = groups
 
         messages.append(new_message)
+        # Streaming için placeholder bot mesajı ekle (UI bu balonu canlı günceller)
+        messages.append({"role": "bot", "content": "", "streaming": True})
+        self._streaming_bot_idx = len(messages) - 1
 
         with open(self.current_chat, "w", encoding="utf-8") as f:
             json.dump(messages, f, ensure_ascii=False, indent=2)
@@ -2845,6 +3967,9 @@ class ChatApp(Gtk.Application):
 
         self.load_chat()
         self.show_typing_indicator()
+
+        self.ai_stop_requested = False
+        self.set_generating_state(True)
 
         threading.Thread(target=self.call_ai, args=(selected_arg,), daemon=True).start()
 
@@ -2975,6 +4100,129 @@ class ChatApp(Gtk.Application):
         # "Bu satırı replace ediyorum: <find> -> <text>"
         return f'Bu satırı {mode} ediyorum: {self._short(find)}  ->  {self._short(text)}'
 
+    def update_stream_text(self, text: str):
+        text = fix_mojibake(text)
+        self.stream_active = True
+
+        try:
+            self.typing_row.set_visible(False)
+        except Exception:
+            pass
+
+        lab = getattr(self, "streaming_label", None)
+        row = getattr(self, "streaming_row", None)
+
+        if lab is not None:
+            if row is not None and not row.get_visible():
+                row.set_visible(True)
+
+            current = lab.get_text() or ""
+            lab.set_text(current + text)
+        else:
+            try:
+                self.typing_label.set_text(text)
+                self.typing_row.set_visible(True)
+            except Exception:
+                pass
+
+        self.scroll_to_bottom(force=True)
+
+    def build_zoomable_image_widget(self, image_path: str, width: int, height: int):
+        p = Path(str(image_path))
+        file = Gio.File.new_for_path(str(p))
+
+        pic = Gtk.Picture.new_for_file(file)
+        pic.set_can_shrink(True)
+        pic.set_keep_aspect_ratio(True)
+        pic.set_content_fit(Gtk.ContentFit.COVER)
+        pic.set_size_request(width, height)
+
+        overlay = Gtk.Overlay()
+        overlay.set_child(pic)
+
+        zoom_btn = Gtk.Button(label="⛶")
+        zoom_btn.add_css_class("flat")
+        zoom_btn.add_css_class("image-zoom-btn")
+        zoom_btn.set_focusable(False)
+        zoom_btn.set_halign(Gtk.Align.START)
+        zoom_btn.set_valign(Gtk.Align.START)
+        zoom_btn.set_margin_top(4)
+        zoom_btn.set_margin_start(4)
+        zoom_btn.set_size_request(26, 26)
+        self.bind_i18n(zoom_btn, "tooltip", "o_Zoom_Attachments")
+
+        self._consume_click(zoom_btn)
+        zoom_btn.connect("clicked", lambda *_: self.open_image_viewer(str(p)))
+
+        overlay.add_overlay(zoom_btn)
+        return overlay
+
+    def open_image_viewer(self, image_path: str):
+        p = Path(str(image_path))
+        if not p.exists():
+            return
+
+        win = Gtk.Window()
+        win.set_transient_for(self.win)
+        win.set_modal(True)
+        win.set_title(p.name)
+        win.set_default_size(1100, 800)
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        outer.set_margin_top(12)
+        outer.set_margin_bottom(12)
+        outer.set_margin_start(12)
+        outer.set_margin_end(12)
+
+        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        title = Gtk.Label(label=p.name)
+        title.set_xalign(0)
+        title.set_hexpand(True)
+        header.append(title)
+
+        close_btn = Gtk.Button(label="✕")
+        close_btn.add_css_class("flat")
+        self.bind_i18n(close_btn, "tooltip", "o_Close_Attachments")
+        close_btn.connect("clicked", lambda *_: win.close())
+        header.append(close_btn)
+
+        outer.append(header)
+
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_hexpand(True)
+        scroller.set_vexpand(True)
+
+        file = Gio.File.new_for_path(str(p))
+        pic = Gtk.Picture.new_for_file(file)
+        pic.set_can_shrink(True)
+        pic.set_keep_aspect_ratio(True)
+        pic.set_content_fit(Gtk.ContentFit.CONTAIN)
+        pic.set_hexpand(True)
+        pic.set_vexpand(True)
+        pic.set_halign(Gtk.Align.CENTER)
+        pic.set_valign(Gtk.Align.CENTER)
+
+        scroller.set_child(pic)
+
+        win.set_child(outer)
+
+        key_controller = Gtk.EventControllerKey()
+
+        def on_key_pressed(_controller, keyval, _keycode, _state):
+            if keyval == Gdk.KEY_Escape:
+                win.close()
+                return True
+            return False
+
+        key_controller.connect("key-pressed", on_key_pressed)
+        win.add_controller(key_controller)
+
+        outer.append(scroller)
+
+        win.set_child(outer)
+        win.present()
+
     def copy_to_clipboard(self, text: str):
         display = Gdk.Display.get_default()
         if not display:
@@ -2983,24 +4231,99 @@ class ChatApp(Gtk.Application):
         clipboard.set(text)
 
     def call_ai(self, selected_arg):
-        # model parametresi göndermiyoruz.
-        # ai.py, chat_models + ai_models[0] mantığıyla kendisi seçecek.
-        cmd = [sys.executable, AI_SCRIPT, str(self.current_chat)]
-
+        cmd = [sys.executable, "-u", AI_SCRIPT, str(self.current_chat)]
         if selected_arg:
             cmd.append(selected_arg)
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            env = os.environ.copy()
+            env["PYTHONUTF8"] = "1"
+            env["PYTHONIOENCODING"] = "utf-8"
+            env["PYTHONUNBUFFERED"] = "1"
 
-            if result.returncode != 0:
-                error_message = result.stderr.strip() or "Bilinmeyen hata"
-                GLib.idle_add(self.handle_ai_error, error_message)
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                bufsize=0,
+                text=False,
+                env=env
+            )
+            self.ai_proc = proc
+            
+            if proc.stdout is None or proc.stderr is None:
+                raise RuntimeError("Popen stdout/stderr PIPE değil (None geldi)")
+
+            import select
+
+            decoder = codecs.getincrementaldecoder("utf-8")("replace")
+            partial = ""
+            last_len = 0
+            last_push = 0
+
+            out_fd = proc.stdout.fileno()
+            err_fd = proc.stderr.fileno()
+
+            # proc çalıştığı sürece stdout/stderr hazır oldukça oku
+            while True:
+                rlist, _, _ = select.select([out_fd, err_fd], [], [], 0.1)
+
+                if out_fd in rlist:
+                    data = os.read(out_fd, 4096)
+                    if data:
+                        text = decoder.decode(data)
+                        if text:
+                            partial += text
+                            # daha sık güncelle (stream hissi)
+                            now = GLib.get_monotonic_time()  # mikro-saniye
+                            if (now - last_push) > 8_000:   # 8ms
+                                last_push = now
+                                new_part = partial[last_len:]
+                                last_len = len(partial)
+                                if new_part:
+                                    GLib.idle_add(self.update_stream_text, new_part)
+
+                if err_fd in rlist:
+                    # stderr'i biriktirmek istersen burada alabilirsin (şimdilik sadece drain)
+                    _ = os.read(err_fd, 4096)
+
+                if proc.poll() is not None:
+                    break
+
+            # decoder tail
+            tail = decoder.decode(b"", final=True)
+            if tail:
+                partial += tail
+
+            new_part = partial[last_len:]
+            last_len = len(partial)
+            if new_part:
+                GLib.idle_add(self.update_stream_text, new_part)
+
+            rc = proc.returncode
+            self.ai_proc = None
+
+            if self.ai_stop_requested:
+                GLib.idle_add(self.after_ai_response)
+                return
+
+            if rc != 0:
+                err = ""
+                try:
+                    err_bytes = proc.stderr.read() if proc.stderr else b""
+                    err = err_bytes.decode("utf-8", errors="replace").strip() if err_bytes else "Bilinmeyen hata"
+                except Exception:
+                    err = "Bilinmeyen hata"
+                GLib.idle_add(self.handle_ai_error, err)
             else:
                 GLib.idle_add(self.after_ai_response)
 
         except Exception as e:
-            GLib.idle_add(self.handle_ai_error, str(e))
+            self.ai_proc = None
+            if self.ai_stop_requested:
+                GLib.idle_add(self.after_ai_response)
+            else:
+                GLib.idle_add(self.handle_ai_error, str(e))
 
 
 if __name__ == "__main__":

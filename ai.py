@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import json
 import base64
@@ -7,6 +8,7 @@ import shutil
 import argparse
 from pathlib import Path
 from datetime import datetime, timezone
+from typing import NoReturn, Any, Dict
 
 import requests
 
@@ -17,6 +19,9 @@ REFS_CACHE_DIR = CACHE_BASE / "refs"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 GLOBAL_SYSTEM_PROMPT = (
+    "Bu mesaj bir talimat setidir."
+    "Bu mesaja cevap verme."
+    "Sadece kullanıcı mesajlarına cevap ver.\n"
     "Bu konuşmada sana zaman zaman e-posta, kod, komut, yapılandırma dosyası "
     "veya birebir kopyalanması gereken metinler yazdırılabilir.\n\n"
 
@@ -84,6 +89,7 @@ GLOBAL_SYSTEM_PROMPT = (
     "  MODE: replace|before|after\n"
     "- <FIND> ve <TEXT> çok uzunsa 120 karakterde kes ve '...' ekle.\n"
     "- Özet dışında ekstra açıklama yazma.\n"
+    "- Buraya kadar olan mesajlar talimat setidir, cevap verme. Sadece en son kullanıcı mesajını yanıtla."
 )
 
 def _safe_read_text(path: Path, max_bytes: int = 250_000) -> str:
@@ -104,25 +110,13 @@ def _is_text_file(path: Path) -> bool:
         ".c", ".cpp", ".h", ".hpp", ".rs", ".go", ".java", ".kt", ".cs", ".sql"
     }
 
-def _img_path_to_data_url(p: str) -> str | None:
-    try:
-        fp = Path(p)
-        if not fp.exists():
-            return None
-        mime, _ = mimetypes.guess_type(str(fp))
-        if not mime:
-            mime = "image/png"
-        b64 = base64.b64encode(fp.read_bytes()).decode("utf-8")
-        return f"data:{mime};base64,{b64}"
-    except Exception:
-        return None
 
-def _die(msg: str, code: int = 1):
+def _die(msg: str, code: int = 1) -> NoReturn:
     sys.stderr.write(msg + "\n")
-    sys.exit(code)
+    raise SystemExit(code)
 
 
-def _load_config() -> dict:
+def _load_config() -> Dict[str, Any]:
     if not CONFIG_PATH.exists():
         _die("Config dosyası bulunamadı.", 1)
     try:
@@ -130,7 +124,6 @@ def _load_config() -> dict:
             return json.load(f) or {}
     except Exception as e:
         _die(f"Config okunamadı: {e}", 1)
-
 
 def _save_config(cfg: dict):
     try:
@@ -296,6 +289,18 @@ def _build_blocks_and_cache_info(msg: dict, cache_images_dir: Path | None):
 
     return blocks, (str(cached_image) if cached_image else None)
 
+def fix_mojibake(s: str) -> str:
+    if not s:
+        return s
+    # Mojibake tipik işaretleri
+    if ("Ã" not in s) and ("Å" not in s) and ("â" not in s):
+        return s
+    try:
+        # yanlışlıkla latin-1/cp1252 gibi decode edilmiş UTF-8'i düzelt
+        return s.encode("latin-1").decode("utf-8")
+    except Exception:
+        return s
+
 
 def _pick_model(cfg: dict, chat_file: Path, cli_model: str | None) -> str:
     """
@@ -333,6 +338,17 @@ def _pick_model(cfg: dict, chat_file: Path, cli_model: str | None) -> str:
 
 
 def main():
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+    # Ekstra sağlamlaştırma (bazı ortamlarda fark yaratır)
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+
     # Args
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("chat_file", nargs="?")
@@ -360,6 +376,7 @@ def main():
 
     # Config + API key
     cfg = _load_config()
+    response_style = (cfg.get("response_style") or "").strip()
     API_KEY = (cfg.get("open_router_key") or "").strip()
     if not API_KEY:
         _die("OpenRouter API Key bulunamadı.", 1)
@@ -368,6 +385,7 @@ def main():
     model_name = _pick_model(cfg, chat_file, args.model)
 
     # Read chat
+    messages = []
     try:
         messages = json.loads(chat_file.read_text(encoding="utf-8")) or []
     except Exception as e:
@@ -376,7 +394,24 @@ def main():
     if not messages:
         sys.exit(0)
 
-    last = messages[-1]
+
+    if messages and isinstance(messages[-1], dict) and messages[-1].get("streaming") and messages[-1].get("role") in ("bot", "assistant"):
+        messages = messages[:-1]  # placeholder'ı payload'a sokma
+
+    if not messages:
+        sys.exit(0)
+
+    # --- son gerçek user mesajını bul ---
+    last_user = None
+    for m in reversed(messages):
+        if isinstance(m, dict) and m.get("role") == "user":
+            last_user = m
+            break
+
+    if last_user is None:
+        _die("Chat içinde user mesajı yok.", 1)
+
+    last = last_user
     final_messages = []
     editable_map = {}  # path(str) -> bool
 
@@ -384,6 +419,12 @@ def main():
         "role": "system",
         "content": GLOBAL_SYSTEM_PROMPT
     })
+
+    if response_style:
+        final_messages.append({
+            "role": "system",
+            "content": f"Kullanıcı şu konuşma tarzını tercih ediyor: {response_style}"
+        })
 
     # Cache setup
     REFS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -510,10 +551,14 @@ def main():
     payload = {
         "model": model_name,
         "messages": final_messages,
-        "max_tokens": 5120
+        "max_tokens": 5120,
+        "stream": True
     }
 
-    # Request
+    # Request (STREAMING)
+    reply_parts = []
+    usage_data = None
+
     try:
         response = requests.post(
             OPENROUTER_URL,
@@ -524,19 +569,64 @@ def main():
                 "X-Title": "capture-ai"
             },
             json=payload,
-            timeout=120
+            timeout=120,
+            stream=True
         )
 
         if response.status_code != 200:
             sys.stderr.write(f"OpenRouter API ERROR ({response.status_code}): {response.text}\n")
             sys.exit(1)
 
-        data = response.json()
+        # SSE'yi satır satır oku (en stabil yöntem)
+        for raw_line in response.iter_lines(decode_unicode=False, chunk_size=1024):
+            if not raw_line:
+                continue
 
-        try:
-            reply = data["choices"][0]["message"]["content"]
-        except Exception:
-            sys.stderr.write("OpenRouter beklenmeyen cevap formatı döndürdü.\n")
+            line = raw_line.strip()
+            if not line.startswith(b"data:"):
+                continue
+
+            data_str = line[len(b"data:"):].strip()
+            if data_str == b"[DONE]":
+                break
+
+            try:
+                evt = json.loads(data_str.decode("utf-8", errors="replace"))
+                if "usage" in evt:
+                    usage_data = evt["usage"]
+            except Exception:
+                continue
+
+            delta = None
+            try:
+                delta = evt["choices"][0]["delta"].get("content")
+            except Exception:
+                delta = None
+
+            if delta:
+                delta = fix_mojibake(delta)
+                reply_parts.append(delta)
+                sys.stdout.write(delta)
+                sys.stdout.flush()
+
+        reply = "".join(reply_parts).strip()
+        # token usage yazdır
+        usage_obj = None
+
+        if usage_data:
+            prompt_t = int(usage_data.get("prompt_tokens", 0) or 0)
+            comp_t   = int(usage_data.get("completion_tokens", 0) or 0)
+            total_t  = int(usage_data.get("total_tokens", 0) or 0)
+
+            usage_obj = {
+                "prompt_tokens": prompt_t,
+                "completion_tokens": comp_t,
+                "total_tokens": total_t
+            }
+
+        reply = fix_mojibake(reply)
+        if not reply:
+            sys.stderr.write("OpenRouter boş stream döndürdü.\n")
             sys.exit(1)
 
     except requests.exceptions.Timeout:
@@ -552,7 +642,19 @@ def main():
         sys.exit(1)
 
     # Save bot reply
-    messages.append({"role": "bot", "content": reply})
+    # UI tarafı streaming için placeholder bot mesajı eklediyse, ona yaz.
+    if messages and isinstance(messages[-1], dict) and messages[-1].get("role") in ("bot", "assistant") and messages[-1].get("streaming"):
+        messages[-1]["role"] = "bot"
+        messages[-1]["content"] = reply
+        messages[-1].pop("streaming", None)
+        # usage JSON'a kaydet
+        if usage_obj is not None:
+            messages[-1]["usage"] = usage_obj
+    else:
+        bot_msg: Dict[str, Any] = {"role": "bot", "content": reply}
+        if usage_obj is not None:
+            bot_msg["usage"] = usage_obj
+        messages.append(bot_msg)
 
     try:
         chat_file.write_text(json.dumps(messages, ensure_ascii=False, indent=2), encoding="utf-8")
