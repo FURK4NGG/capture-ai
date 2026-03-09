@@ -90,7 +90,7 @@ Manual test (çalıştığını doğruladık)
 - [x] Adding documents
 - [x] AI can access and change your documents within permission
 - [x] Change UI colors
-- [x] Language support [Turkish English] 
+- [x] Language support [Turkish, English] 
 - [ ] Compatible with macOS, Windows, and Linux devices
 - [ ] Run local text model
 - [ ] Generate image
