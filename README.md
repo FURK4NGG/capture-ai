@@ -77,6 +77,7 @@ Manual test (çalıştığını doğruladık)
 ## Roadmap
 - [x] Easy access with keyboard shortcuts
 - [x] Model management per chat
+- [x] Generate image
 - [x] Access every AI model easily
 - [x] Unlimited reference tree support
 - [x] Customize how the AI responds
@@ -93,7 +94,6 @@ Manual test (çalıştığını doğruladık)
 - [x] Language support [Turkish, English] 
 - [ ] Compatible with macOS, Windows, and Linux devices
 - [ ] Run local text model
-- [ ] Generate image
 - [ ] Control with terminal
  
 ## 🔎 ALL APP FEATURES
