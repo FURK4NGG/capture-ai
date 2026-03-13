@@ -3,7 +3,7 @@
 
 ## 🔎 Preparation
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
-2. `Make sure you place your files in the following directories.`
+2. `Make sure you place your files in the following directories.`  
    ~/capture-ai/ui.py  
    ~/capture-ai/ai.py  
    ~/capture-ai/capture-ai.sh  
