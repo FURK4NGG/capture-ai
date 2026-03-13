@@ -29,6 +29,9 @@
       "o_Response_Style": "Cevap Tarzı",
       "o_Personalization": "Kişiselleştirme",
       "o_Language": "🇹🇷 Dil",
+      "o_Input_Tokens": "Girdi token",
+      "o_Output_Tokens": "Çıktı token",
+      "o_Total_Tokens": "Toplam",
       "o_Copy": "Kopyala",
       "o_Thinking": "Düşünüyor",
       "o_Take_Photo": "Fotoğraf Çek",
@@ -37,7 +40,25 @@
       "o_Apply": "Uygula",
       "o_Reject": "Reddet",
       "o_Save": "Kaydet",
-      "o_Cancel": "İptal"
+      "o_Cancel": "İptal",
+      "o_Document_Changed": "Dosya değiştirildi",
+      "o_Cancelled": "İşlem iptal edildi",
+      "o_Generation_Failed": "Yanıt oluşturulamadı",
+      "o_OpenRouter_Placeholder": "OpenRouter API Key girin...",
+      "o_Response_Style_Placeholder": "Örn: Samimi ve esprili konuş",
+      "o_Window_BG": "Genel arkaplan",
+      "o_Input_BG": "Input arkaplan",
+      "o_User_BG": "Kullanıcı balon arkaplan",
+      "o_User_Text": "Kullanıcı yazı rengi",
+      "o_Bot_BG": "Bot balon arkaplan",
+      "o_Bot_Text": "Bot yazı rengi",
+      "o_Sidebar_Text": "Sidebar yazı rengi",
+      "o_Color_Edit_Hint": "Şu anda {mode_name} renklerini düzenliyorsun.\nHex formatı kullan: örn #303643",
+      "o_Background_Hint": "Sohbet Arkaplan Resmi",
+      "o_Background_Path_Placeholder": "/dosya-yolu/resim.png",
+      "o_Clear": "Temizle",
+      "o_Select_Image": "Resim Seç",
+      "o_Reset_Default": "Varsayılana dön"
     },
     "en": {
       "o_Toggle_Sidebar": "Show/Hide",
@@ -67,6 +88,9 @@
       "o_Response_Style": "Response style",
       "o_Personalization": "Personalization",
       "o_Language": "🇬🇧 Language",
+      "o_Input_Tokens": "Input tokens",
+      "o_Output_Tokens": "Output tokens",
+      "o_Total_Tokens": "Total",
       "o_Copy": "Copy",
       "o_Thinking": "Thinking",
       "o_Take_Photo": "Take Photo",
@@ -75,7 +99,25 @@
       "o_Apply": "Apply",
       "o_Reject": "Reject",
       "o_Save": "Save",
-      "o_Cancel": "Cancel"
+      "o_Cancel": "Cancel",
+      "o_File_Changed": "File modified",
+      "o_Cancelled": "Operation cancelled",
+      "o_Generation_Failed": "Failed to generate response",
+      "o_OpenRouter_Placeholder": "Enter OpenRouter API Key...",
+      "o_Response_Style_Placeholder": "Example: Speak in a friendly and humorous tone",
+      "o_Window_BG": "Window background",
+      "o_Input_BG": "Input background",
+      "o_User_BG": "User bubble background",
+      "o_User_Text": "User text color",
+      "o_Bot_BG": "Bot bubble background",
+      "o_Bot_Text": "Bot text color",
+      "o_Sidebar_Text": "Sidebar text color",
+      "o_Color_Edit_Hint": "You are editing {mode_name} colors.\nUse hex format: e.g. #303643",
+      "o_Background_Hint": "Chat Background Image",
+      "o_Background_Path_Placeholder": "/file-path/photo.png",
+      "o_Clear": "Clear",
+      "o_Select_Image": "Select Image",
+      "o_Reset_Default": "Reset to default"
     }
   },
   "last_chat": "Welcome.json",
@@ -91,8 +133,7 @@
     "Welcome.json"
   ],
   "ai_models": [
-    "google/gemini-3-pro-image-preview",
-    "google/gemini-2.5-flash-image"
+    "google/gemini-3-pro-image-preview"
   ],
   "chat_models": {
     "Welcome.json": "google/gemini-3-pro-image-preview"
