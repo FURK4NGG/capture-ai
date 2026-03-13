@@ -8,7 +8,7 @@
    ~/capture-ai/ai.py  
    ~/capture-ai/capture-ai.sh  
    ~/.config/capture-ai/config.json
-   <details>
+<details>
 <summary>3. Download Packages</summary>
 >Arch  
 
