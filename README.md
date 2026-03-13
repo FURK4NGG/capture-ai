@@ -48,6 +48,8 @@
    ```
    sudo apt install -y alsa-utils
    ```
+   <br>
+   <br>
    </details>
 
 </details>
