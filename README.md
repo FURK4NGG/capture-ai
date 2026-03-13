@@ -48,7 +48,6 @@
 
    Packages Check
    ```
-   paket kontrol  
    command -v pw-record || echo "pw-record not found"  
    command -v arecord  || echo "arecord not found"  
    ```
@@ -64,7 +63,7 @@
    
    >ls build/bin  
     #Should see these -> ... whisper-cli, main, whisper-server, ...  
-   
+   <br><br>
    Download 'Tiny' Model  
    ```
    mkdir -p ~/.local/share/whisper  
