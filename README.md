@@ -10,11 +10,24 @@
    ~/.config/capture-ai/config.json
 <details>
 <summary>3. Download Packages</summary>
+
+   <details>
+   <summary>Arch Packages</summary>
+      
+   ```
+   sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
+   ```
+   #voice record
+   >pw-record  
+   ```sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
+   ```
    
->Arch  
-```
-sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
-```
+   >arecord
+   ```
+   sudo pacman -S --needed alsa-utils
+   ```
+   </details>
+
 
 >Debian/Ubuntu/Rasberry Pi OS
 ```
@@ -22,19 +35,7 @@ sudo apt update && sudo apt install -y python3 python3-venv python3-gi gir1.2-gt
 ```
 </details>
    
-> **Not Required:**Go to the[`Google AI Studio`](https://aistudio.google.com/app/api-keys)>F12>Network>F5>Click on any request>Security>Copy the SHA-1 fingerprint
 
-
-
-sudo pacman -S python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
-
-sudo pacman -S --needed \
-  python python-gobject gtk4 libadwaita \
-  gobject-introspection \
-  cairo pango glib2 \
-  xdg-utils
-
-  sudo apt install fonts-noto-color-emoji
 
 #voice record
 pw-record --> sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
