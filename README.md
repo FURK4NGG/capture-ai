@@ -39,7 +39,7 @@
    ```
    sudo pacman -S --needed alsa-utils
    ```
-
+   <br>
    📄 Offline Speech to Text
     
    ```
@@ -52,7 +52,7 @@
    command -v pw-record || echo "pw-record not found"  
    command -v arecord  || echo "arecord not found"  
    ```
-
+   <br>
    🧠 Install whisper.cpp (Offline Speech Recognition Engine)
    ```
    git clone https://github.com/ggml-org/whisper.cpp.git  
