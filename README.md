@@ -13,10 +13,22 @@
 
    <details>
    <summary>Arch Packages</summary>
+
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+   
       
    ```
    sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
+   <br>
+   Offline Voice Input for Linux
+
+   🎤 pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
+
    🎙️voice record
    >pw-record  
    ```
@@ -27,9 +39,63 @@
    ```
    sudo pacman -S --needed alsa-utils
    ```
+
+    📄offline stt
+   ```
+   sudo pacman -S --needed cmake make gcc
+   ```
+
+   Packages Check
+   ```
+   paket kontrol  
+   command -v pw-record || echo "pw-record not found"  
+   command -v arecord  || echo "arecord not found"  
+   ```
+
+   Install whisper.cpp (Offline Speech Recognition Engine)
+   ```
+   git clone https://github.com/ggml-org/whisper.cpp.git  
+   cd whisper.cpp  
+   cmake -B build  
+   cmake --build build -j --config Release
+   ```
+   
+   >ls build/bin  
+    #Should see these -> ... whisper-cli, main, whisper-server, ...  
+   
+   Download Tiny  
+   ```
+   mkdir -p ~/.local/share/whisper  
+   wget -O ~/.local/share/whisper/ggml-tiny.bin \  
+     https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+   ```
+   
+   Packages Check  
+   ```
+   ls -l ~/whisper.cpp/build/bin/whisper-cli  
+   ls -lh ~/.local/share/whisper/ggml-tiny.bin
+   ```
+   
+   Manual Test  
+   ```
+   /home/bob/whisper.cpp/build/bin/whisper-cli \  
+     -m /home/bob/.local/share/whisper/ggml-tiny.bin \  
+     -f /tmp/capture-ai-mic-20260228-205753.wav \  
+     -l tr
+   ```
    <br>
    <br>
    </details>
+
+
+
+
+
+
+
+
+
+
 
 
    <details>
@@ -48,6 +114,7 @@
    ```
    sudo apt install -y alsa-utils
    ```
+
    <br>
    <br>
    </details>
@@ -58,8 +125,7 @@
 
 
 
-#offline stt
-sudo pacman -S --needed cmake make gcc
+
 
 #screenhot
 sudo pacman -S --needed \
@@ -80,16 +146,7 @@ $capture-ai = /home/$USER/capture-ai/capture-ai.sh
 bind = $mainMod SHIFT, Q, exec, $capture-ai image  
 bind = $mainMod, Q, exec, $capture-ai text  
 
-Offline Voice for Linux  
-🎤 pw-record / arecord  
-⬇  
-📄 WAV dosyası  
-⬇  
-🧠 whisper-cli  
-⬇  
-✍ Metin  
-
-sudo pacman -S --needed git cmake make gcc pipewire wireplumber alsa-utils  
+ 
 
 paket kontrol  
 command -v pw-record || echo "pw-record yok"  
