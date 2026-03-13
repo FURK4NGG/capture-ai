@@ -27,7 +27,7 @@
    <br>
    Offline Voice Input for Linux
 
-   🎤 pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
+   🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
 
    🎙️voice record
    >pw-record  
@@ -40,7 +40,7 @@
    sudo pacman -S --needed alsa-utils
    ```
 
-    📄offline stt
+    📄 Offline Speech to Text
    ```
    sudo pacman -S --needed cmake make gcc
    ```
@@ -52,7 +52,7 @@
    command -v arecord  || echo "arecord not found"  
    ```
 
-   Install whisper.cpp (Offline Speech Recognition Engine)
+   🧠 Install whisper.cpp (Offline Speech Recognition Engine)
    ```
    git clone https://github.com/ggml-org/whisper.cpp.git  
    cd whisper.cpp  
@@ -63,7 +63,7 @@
    >ls build/bin  
     #Should see these -> ... whisper-cli, main, whisper-server, ...  
    
-   Download Tiny  
+   Download 'Tiny' Model  
    ```
    mkdir -p ~/.local/share/whisper  
    wget -O ~/.local/share/whisper/ggml-tiny.bin \  
