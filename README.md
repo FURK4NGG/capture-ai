@@ -10,10 +10,21 @@
 
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 2. `Make sure you place your files in the following directories.`
-   ~/capture-ai/ui.py
-   ~/capture-ai/ai.py
-   ~/capture-ai/capture-ai.sh
+   ~/capture-ai/ui.py  
+   ~/capture-ai/ai.py  
+   ~/capture-ai/capture-ai.sh  
    ~/.config/capture-ai/config.json
+<summary>3. Download Packages</summary>
+>Arch  
+```
+sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
+```
+
+>Debian/Ubuntu/Rasberry Pi OS
+```
+sudo apt update && sudo apt install -y python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 fonts-noto-color-emoji
+```
+</details>
    
 > **Not Required:**Go to the[`Google AI Studio`](https://aistudio.google.com/app/api-keys)>F12>Network>F5>Click on any request>Security>Copy the SHA-1 fingerprint
 
