@@ -30,17 +30,29 @@
    </details>
 
 
->Debian/Ubuntu/Rasberry Pi OS
-```
-sudo apt update && sudo apt install -y python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 fonts-noto-color-emoji
-```
+   <details>
+   <summary>Debian/Ubuntu/Rasberry Pi OS</summary>
+      
+   ```
+   sudo apt update && sudo apt install -y python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 fonts-noto-color-emoji
+   ```
+   #voice record
+   >pw-record  
+   ```
+   sudo apt update && sudo apt install -y pipewire wireplumber pipewire-audio-client-libraries pipewire-pulse
+   ```
+   
+   >arecord
+   ```
+   sudo apt install -y alsa-utils
+   ```
+   </details>
+
 </details>
    
 
 
-#voice record
-pw-record --> sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
-arecord --> sudo pacman -S --needed alsa-utils
+
 
 #offline stt
 sudo pacman -S --needed cmake make gcc
