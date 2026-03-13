@@ -69,8 +69,7 @@
    Download 'Tiny' Model  
    ```
    mkdir -p ~/.local/share/whisper  
-   wget -O ~/.local/share/whisper/ggml-tiny.bin \  
-     https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+   wget -O ~/.local/share/whisper/ggml-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
    ```
    
    Packages Check  
