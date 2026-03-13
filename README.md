@@ -8,6 +8,8 @@ sudo pacman -S --needed \
   cairo pango glib2 \
   xdg-utils
 
+  sudo apt install fonts-noto-color-emoji
+
 #voice record
 pw-record --> sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
 arecord --> sudo pacman -S --needed alsa-utils
