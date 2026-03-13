@@ -62,7 +62,8 @@
    ```
    
    >ls build/bin  
-   #Should see these -> ... whisper-cli, main, whisper-server, ...  
+   #Should see these -> ... whisper-cli, main, whisper-server, ...
+
    <br><br>
    Download 'Tiny' Model  
    ```
