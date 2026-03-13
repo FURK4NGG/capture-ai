@@ -41,6 +41,7 @@
    ```
 
     📄 Offline Speech to Text
+    
    ```
    sudo pacman -S --needed cmake make gcc
    ```
