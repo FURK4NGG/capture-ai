@@ -19,7 +19,8 @@
    ```
    #voice record
    >pw-record  
-   ```sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
+   ```
+   sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
    ```
    
    >arecord
