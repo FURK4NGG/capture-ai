@@ -24,7 +24,7 @@
    ```
    sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
-   <br>
+   <br><br>
    Offline Voice Input for Linux
 
    🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
@@ -39,7 +39,7 @@
    ```
    sudo pacman -S --needed alsa-utils
    ```
-   <br>
+   <br><br>
    📄 Offline Speech to Text
     
    ```
@@ -52,7 +52,7 @@
    command -v pw-record || echo "pw-record not found"  
    command -v arecord  || echo "arecord not found"  
    ```
-   <br>
+   <br><br>
    🧠 Install whisper.cpp (Offline Speech Recognition Engine)  
    
    ```
