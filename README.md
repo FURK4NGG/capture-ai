@@ -16,6 +16,7 @@
    ~/.config/capture-ai/config.json
 <summary>3. Download Packages</summary>
 >Arch  
+
 ```
 sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
 ```
