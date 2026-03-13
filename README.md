@@ -53,7 +53,8 @@
    command -v arecord  || echo "arecord not found"  
    ```
    <br>
-   🧠 Install whisper.cpp (Offline Speech Recognition Engine)
+   🧠 Install whisper.cpp (Offline Speech Recognition Engine)  
+   
    ```
    git clone https://github.com/ggml-org/whisper.cpp.git  
    cd whisper.cpp  
