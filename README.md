@@ -6,7 +6,7 @@
 <summary>1. Components</summary>
 '1' ESP-8266 0.96 inch oled development board<br>
 '3' Button
-</details>
+
 
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 2. `Make sure you place your files in the following directories.`
@@ -15,7 +15,7 @@
    ~/capture-ai/capture-ai.sh  
    ~/.config/capture-ai/config.json
 <summary>3. Download Packages</summary>
-> Arch  
+>Arch  
 
 ```
 sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
