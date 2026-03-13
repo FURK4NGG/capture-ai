@@ -1,5 +1,24 @@
 # ai-controller
 <!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
+
+## 🔎 Preparation
+<details>
+<summary>1. Components</summary>
+'1' ESP-8266 0.96 inch oled development board<br>
+'3' Button
+</details>
+
+1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
+2. `Make sure you place your files in the following directories.`
+   ~/capture-ai/ui.py
+   ~/capture-ai/ai.py
+   ~/capture-ai/capture-ai.sh
+   ~/.config/capture-ai/config.json
+   
+> **Not Required:**Go to the[`Google AI Studio`](https://aistudio.google.com/app/api-keys)>F12>Network>F5>Click on any request>Security>Copy the SHA-1 fingerprint
+
+
+
 sudo pacman -S python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
 
 sudo pacman -S --needed \
