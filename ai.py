@@ -301,6 +301,148 @@ def fix_mojibake(s: str) -> str:
     except Exception:
         return s
 
+def _message_to_plain_text(content) -> str:
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") == "text":
+                txt = item.get("text")
+                if isinstance(txt, str) and txt.strip():
+                    parts.append(txt.strip())
+        return "\n".join(parts).strip()
+
+    return ""
+
+
+def _extract_images_from_message(msg: dict) -> dict:
+    """
+    OpenRouter / farklı provider cevaplarından image url veya base64 çıkar.
+    UI'nin finalize_ai_response() fonksiyonunun anlayacağı formatı döndürür.
+    """
+    out = {
+        "type": "text",
+        "content": "",
+    }
+
+    if not isinstance(msg, dict):
+        return out
+
+    content = msg.get("content")
+    text_parts = []
+    image_urls = []
+    image_b64 = []
+
+    # 1) content string ise
+    if isinstance(content, str):
+        if content.strip():
+            text_parts.append(content.strip())
+
+    # 2) content liste ise
+    elif isinstance(content, list):
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+
+            itype = str(item.get("type") or "").strip().lower()
+
+            if itype == "text":
+                txt = item.get("text")
+                if isinstance(txt, str) and txt.strip():
+                    text_parts.append(txt.strip())
+
+            elif itype in ("image_url", "output_image"):
+                iu = item.get("image_url")
+                if isinstance(iu, str) and iu.strip():
+                    image_urls.append(iu.strip())
+                elif isinstance(iu, dict):
+                    u = iu.get("url")
+                    if isinstance(u, str) and u.strip():
+                        image_urls.append(u.strip())
+
+                b64 = item.get("b64_json")
+                if isinstance(b64, str) and b64.strip():
+                    image_b64.append(b64.strip())
+
+                data = item.get("image")
+                if isinstance(data, str) and data.strip():
+                    image_b64.append(data.strip())
+
+    # 3) message level fallback alanlar
+    for key in ("image", "url"):
+        val = msg.get(key)
+        if isinstance(val, str) and val.strip():
+            image_urls.append(val.strip())
+
+    one_b64 = msg.get("image_base64")
+    if isinstance(one_b64, str) and one_b64.strip():
+        image_b64.append(one_b64.strip())
+
+    imgs = msg.get("images")
+    if isinstance(imgs, list):
+        for item in imgs:
+            if isinstance(item, str) and item.strip():
+                image_urls.append(item.strip())
+            elif isinstance(item, dict):
+                u = item.get("url")
+                if isinstance(u, str) and u.strip():
+                    image_urls.append(u.strip())
+
+                iu = item.get("image_url")
+                if isinstance(iu, str) and iu.strip():
+                    image_urls.append(iu.strip())
+                elif isinstance(iu, dict):
+                    uu = iu.get("url")
+                    if isinstance(uu, str) and uu.strip():
+                        image_urls.append(uu.strip())
+
+                b64 = item.get("b64_json")
+                if isinstance(b64, str) and b64.strip():
+                    image_b64.append(b64.strip())
+
+    # uniq
+    def _uniq(seq):
+        seen = set()
+        out2 = []
+        for x in seq:
+            if x not in seen:
+                seen.add(x)
+                out2.append(x)
+        return out2
+
+    image_urls = _uniq(image_urls)
+    image_b64 = _uniq(image_b64)
+
+    out["content"] = "\n".join(text_parts).strip()
+
+    if image_urls:
+        out["type"] = "image"
+        out["images"] = image_urls
+
+    if image_b64:
+        out["type"] = "image"
+        out["images_base64"] = image_b64
+
+    if image_urls and image_b64:
+        out["type"] = "image"
+
+    return out
+
+
+def _is_image_generation_model(model_name: str) -> bool:
+    m = str(model_name or "").strip().lower()
+    return any(x in m for x in [
+        "image",
+        "gpt-image",
+        "imagen",
+        "flux",
+        "recraft",
+        "stable-diffusion"
+    ])
 
 def _pick_model(cfg: dict, chat_file: Path, cli_model: str | None) -> str:
     """
@@ -548,16 +690,17 @@ def main():
         final_messages.append({"role": role, "content": last.get("content", "")})
 
     # Payload
+    is_image_model = _is_image_generation_model(model_name)
     payload = {
         "model": model_name,
         "messages": final_messages,
         "max_tokens": 5120,
-        "stream": True
+        "stream": False if is_image_model else True
     }
 
     # Request (STREAMING)
-    reply_parts = []
-    usage_data = None
+    reply = ""
+    usage_obj = None
 
     try:
         response = requests.post(
@@ -570,64 +713,105 @@ def main():
             },
             json=payload,
             timeout=120,
-            stream=True
+            stream=not is_image_model
         )
 
         if response.status_code != 200:
             sys.stderr.write(f"OpenRouter API ERROR ({response.status_code}): {response.text}\n")
             sys.exit(1)
 
-        # SSE'yi satır satır oku (en stabil yöntem)
-        for raw_line in response.iter_lines(decode_unicode=False, chunk_size=1024):
-            if not raw_line:
-                continue
+        if is_image_model:
+            data = response.json()
 
-            line = raw_line.strip()
-            if not line.startswith(b"data:"):
-                continue
+            usage_data = data.get("usage")
+            if usage_data:
+                prompt_t = int(usage_data.get("prompt_tokens", 0) or 0)
+                comp_t   = int(usage_data.get("completion_tokens", 0) or 0)
+                total_t  = int(usage_data.get("total_tokens", 0) or 0)
 
-            data_str = line[len(b"data:"):].strip()
-            if data_str == b"[DONE]":
-                break
+                usage_obj = {
+                    "prompt_tokens": prompt_t,
+                    "completion_tokens": comp_t,
+                    "total_tokens": total_t
+                }
 
+            msg = {}
             try:
-                evt = json.loads(data_str.decode("utf-8", errors="replace"))
-                if "usage" in evt:
-                    usage_data = evt["usage"]
+                msg = data["choices"][0]["message"]
             except Exception:
-                continue
+                msg = {}
 
-            delta = None
-            try:
-                delta = evt["choices"][0]["delta"].get("content")
-            except Exception:
+            result_obj = _extract_images_from_message(msg)
+
+            # hiç image yoksa düz text fallback
+            if not result_obj.get("content") and not result_obj.get("images") and not result_obj.get("images_base64"):
+                txt = _message_to_plain_text(msg.get("content"))
+                result_obj = {
+                    "type": "text",
+                    "content": fix_mojibake(txt)
+                }
+
+            if usage_obj is not None:
+                result_obj["usage"] = usage_obj
+
+            reply = json.dumps(result_obj, ensure_ascii=False)
+
+            sys.stdout.write(reply)
+            sys.stdout.flush()
+
+        else:
+            reply_parts = []
+            usage_data = None
+
+            for raw_line in response.iter_lines(decode_unicode=False, chunk_size=1024):
+                if not raw_line:
+                    continue
+
+                line = raw_line.strip()
+                if not line.startswith(b"data:"):
+                    continue
+
+                data_str = line[len(b"data:"):].strip()
+                if data_str == b"[DONE]":
+                    break
+
+                try:
+                    evt = json.loads(data_str.decode("utf-8", errors="replace"))
+                    if "usage" in evt:
+                        usage_data = evt["usage"]
+                except Exception:
+                    continue
+
                 delta = None
+                try:
+                    delta = evt["choices"][0]["delta"].get("content")
+                except Exception:
+                    delta = None
 
-            if delta:
-                delta = fix_mojibake(delta)
-                reply_parts.append(delta)
-                sys.stdout.write(delta)
-                sys.stdout.flush()
+                if delta:
+                    delta = fix_mojibake(delta)
+                    reply_parts.append(delta)
+                    sys.stdout.write(delta)
+                    sys.stdout.flush()
 
-        reply = "".join(reply_parts).strip()
-        # token usage yazdır
-        usage_obj = None
+            reply = "".join(reply_parts).strip()
 
-        if usage_data:
-            prompt_t = int(usage_data.get("prompt_tokens", 0) or 0)
-            comp_t   = int(usage_data.get("completion_tokens", 0) or 0)
-            total_t  = int(usage_data.get("total_tokens", 0) or 0)
+            if usage_data:
+                prompt_t = int(usage_data.get("prompt_tokens", 0) or 0)
+                comp_t   = int(usage_data.get("completion_tokens", 0) or 0)
+                total_t  = int(usage_data.get("total_tokens", 0) or 0)
 
-            usage_obj = {
-                "prompt_tokens": prompt_t,
-                "completion_tokens": comp_t,
-                "total_tokens": total_t
-            }
+                usage_obj = {
+                    "prompt_tokens": prompt_t,
+                    "completion_tokens": comp_t,
+                    "total_tokens": total_t
+                }
 
-        reply = fix_mojibake(reply)
-        if not reply:
-            sys.stderr.write("OpenRouter boş stream döndürdü.\n")
-            sys.exit(1)
+
+            reply = fix_mojibake(reply)
+            if not reply:
+                sys.stderr.write("OpenRouter boş stream döndürdü.\n")
+                sys.exit(1)
 
     except requests.exceptions.Timeout:
         sys.stderr.write("İstek zaman aşımına uğradı (timeout).\n")
@@ -640,30 +824,7 @@ def main():
     except Exception as e:
         sys.stderr.write(f"AI ERROR: {str(e)}\n")
         sys.exit(1)
-
-    # Save bot reply
-    # UI tarafı streaming için placeholder bot mesajı eklediyse, ona yaz.
-    if messages and isinstance(messages[-1], dict) and messages[-1].get("role") in ("bot", "assistant") and messages[-1].get("streaming"):
-        messages[-1]["role"] = "bot"
-        messages[-1]["content"] = reply
-        messages[-1].pop("streaming", None)
-        # usage JSON'a kaydet
-        if usage_obj is not None:
-            messages[-1]["usage"] = usage_obj
-    else:
-        bot_msg: Dict[str, Any] = {"role": "bot", "content": reply}
-        if usage_obj is not None:
-            bot_msg["usage"] = usage_obj
-        messages.append(bot_msg)
-
-    try:
-        chat_file.write_text(json.dumps(messages, ensure_ascii=False, indent=2), encoding="utf-8")
-    except Exception as e:
-        sys.stderr.write(f"Chat yazılamadı: {e}\n")
-        sys.exit(1)
-
     sys.exit(0)
-
 
 if __name__ == "__main__":
     main()

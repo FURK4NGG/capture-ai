@@ -24,6 +24,8 @@ CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 BASE_DIR = Path.home() / ".cache" / "capture-ai"
 CHAT_DIR = BASE_DIR / "chats"
 AI_SCRIPT = str(Path.home() / "capture-ai/ai.py")
+GENERATED_DIR = BASE_DIR / "generated_images"
+GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
 CHAT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1076,6 +1078,181 @@ class ChatApp(Gtk.Application):
 
         return False
 
+    # ------------------------- AI IMAGES --------------------------------
+
+    def save_base64_image(self, b64_data: str, ext: str = "png") -> str | None:
+        try:
+            raw = base64.b64decode(b64_data)
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+            out = GENERATED_DIR / f"gen-{stamp}.{ext}"
+            out.write_bytes(raw)
+            return str(out.resolve())
+        except Exception as e:
+            print("save_base64_image error:", e)
+            return None
+
+
+    def download_image_to_cache(self, url: str) -> str | None:
+        try:
+            import urllib.request
+
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+
+            ext = "png"
+            low = url.lower()
+            if ".jpg" in low or ".jpeg" in low:
+                ext = "jpg"
+            elif ".webp" in low:
+                ext = "webp"
+
+            out = GENERATED_DIR / f"gen-{stamp}.{ext}"
+            urllib.request.urlretrieve(url, str(out))
+            return str(out.resolve())
+        except Exception as e:
+            print("download_image_to_cache error:", e)
+            return None
+
+    def finalize_ai_response(self, raw_text: str):
+        raw_text = (raw_text or "").strip()
+
+        try:
+            data = json.loads(raw_text)
+        except Exception:
+            data = {"type": "text", "content": raw_text}
+
+        try:
+            with open(self.current_chat, "r", encoding="utf-8") as f:
+                messages = json.load(f) or []
+        except Exception:
+            messages = []
+
+        # son streaming bot placeholder'ını bul
+        bot_idx = None
+        for i in range(len(messages) - 1, -1, -1):
+            msg = messages[i]
+            if msg.get("role") == "bot" and msg.get("streaming"):
+                bot_idx = i
+                break
+
+        if bot_idx is None:
+            messages.append({"role": "bot", "content": ""})
+            bot_idx = len(messages) - 1
+
+        bot_msg = messages[bot_idx]
+        bot_msg.pop("streaming", None)
+
+        result_type = str(data.get("type") or "text").strip().lower()
+        bot_msg["content"] = str(data.get("content") or "").strip()
+
+        saved_images = []
+        seen_saved = set()
+
+        # usage varsa kaydet
+        usage = data.get("usage")
+        if isinstance(usage, dict):
+            bot_msg["usage"] = usage
+        else:
+            bot_msg.pop("usage", None)
+
+        # 1) URL tabanlı görseller
+        image_candidates = []
+        inline_data_urls = []
+
+        # tekil alanlar
+        for key in ("image", "url"):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                sval = val.strip()
+                if sval.startswith("data:image/"):
+                    inline_data_urls.append(sval)
+                else:
+                    image_candidates.append(sval)
+
+        imgs = data.get("images")
+        if isinstance(imgs, list):
+            for item in imgs:
+                if isinstance(item, str) and item.strip():
+                    sval = item.strip()
+                    if sval.startswith("data:image/"):
+                        inline_data_urls.append(sval)
+                    else:
+                        image_candidates.append(sval)
+
+                elif isinstance(item, dict):
+                    u = item.get("url")
+                    if isinstance(u, str) and u.strip():
+                        sval = u.strip()
+                        if sval.startswith("data:image/"):
+                            inline_data_urls.append(sval)
+                        else:
+                            image_candidates.append(sval)
+
+                    iu = item.get("image_url")
+                    if isinstance(iu, str) and iu.strip():
+                        sval = iu.strip()
+                        if sval.startswith("data:image/"):
+                            inline_data_urls.append(sval)
+                        else:
+                            image_candidates.append(sval)
+
+                    elif isinstance(iu, dict):
+                        uu = iu.get("url")
+                        if isinstance(uu, str) and uu.strip():
+                            sval = uu.strip()
+                            if sval.startswith("data:image/"):
+                                inline_data_urls.append(sval)
+                            else:
+                                image_candidates.append(sval)
+
+        for url in image_candidates:
+            local_path = self.download_image_to_cache(url)
+            if local_path and local_path not in seen_saved:
+                seen_saved.add(local_path)
+                saved_images.append(local_path)
+
+        # 2) base64 tabanlı görseller
+        base64_candidates = []
+
+        for item in inline_data_urls:
+            if item.startswith("data:image/") and "," in item:
+                base64_candidates.append(item.split(",", 1)[1].strip())
+
+        one_b64 = data.get("image_base64")
+        if isinstance(one_b64, str) and one_b64.strip():
+            base64_candidates.append(one_b64.strip())
+
+        many_b64 = data.get("images_base64")
+        if isinstance(many_b64, list):
+            for item in many_b64:
+                if isinstance(item, str) and item.strip():
+                    base64_candidates.append(item.strip())
+                elif isinstance(item, dict):
+                    b = item.get("b64_json")
+                    if isinstance(b, str) and b.strip():
+                        base64_candidates.append(b.strip())
+
+        for item in base64_candidates:
+            if item.startswith("data:image/") and "," in item:
+                item = item.split(",", 1)[1].strip()
+
+            local_path = self.save_base64_image(item, "png")
+            if local_path and local_path not in seen_saved:
+                seen_saved.add(local_path)
+                saved_images.append(local_path)
+
+        if saved_images:
+            bot_msg["images"] = saved_images
+        else:
+            bot_msg.pop("images", None)
+
+        messages[bot_idx] = bot_msg
+
+        try:
+            with open(self.current_chat, "w", encoding="utf-8") as f:
+                json.dump(messages, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print("finalize_ai_response write error:", e)
+
     # ---------------- IMAGE,DOCS PREVIEW AND ATTACH MENU ----------------
 
     def _measure_text_px(self, widget: Gtk.Widget, text: str) -> int:
@@ -1534,22 +1711,41 @@ class ChatApp(Gtk.Application):
         self.typing_dots = 0
         GLib.timeout_add(500, self.animate_typing)
 
-    def after_ai_response(self):
+    def hide_typing_indicator(self):
         self.typing_active = False
         self.stream_active = False
-        self.ai_proc = None
-        self.ai_stop_requested = False
-        self.set_generating_state(False)
 
         try:
             self.typing_row.set_visible(False)
         except Exception:
             pass
 
-        self.load_chat()
-        self.scroll_to_bottom()
+    def after_ai_response(self):
+        self.hide_typing_indicator()
+        self.set_generating_state(False)
+
+        if getattr(self, "ai_stop_requested", False):
+            try:
+                with open(self.current_chat, "r", encoding="utf-8") as f:
+                    messages = json.load(f) or []
+
+                messages.append({
+                    "role": "info",
+                    "content": self("o_Cancelled")
+                })
+
+                with open(self.current_chat, "w", encoding="utf-8") as f:
+                    json.dump(messages, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+
+        self.ai_proc = None
+        self.ai_stop_requested = False
         self.streaming_row = None
         self.streaming_label = None
+
+        self.load_chat()
+        self.scroll_to_bottom(force=True)
 
     # ---------------- MODELS LIST ----------------
 
@@ -2081,7 +2277,8 @@ class ChatApp(Gtk.Application):
             pass
 
     def open_language_dialog(self):
-        dialog = Gtk.Dialog(title=self("Dil"), transient_for=self.win)
+        dialog = Gtk.Dialog(transient_for=self.win)
+        self.bind_i18n(dialog, "title", "o_Language")
         dialog.set_modal(True)
 
         content = dialog.get_content_area()
@@ -2094,7 +2291,8 @@ class ChatApp(Gtk.Application):
         current_lang = self.get_ui_language()
         langs = self.get_available_ui_languages()
 
-        label = Gtk.Label(label=self("Dil"))
+        label = Gtk.Label()
+        self.bind_i18n(label, "label", "o_Language")
         label.set_xalign(0)
         content.append(label)
 
@@ -2199,7 +2397,7 @@ class ChatApp(Gtk.Application):
         is_dark = bool(cfg.get("dark_mode", True))
         mode_name = "Dark Mode" if is_dark else "Light Mode"
 
-        dialog = Gtk.Dialog(title=f"Kişiselleştirme ({mode_name})", transient_for=self.win)
+        dialog = Gtk.Dialog(title=f"{self('o_Personalization')} ({mode_name})",transient_for=self.win)
         dialog.set_modal(True)
         dialog.set_default_size(460, 340)
 
@@ -2271,18 +2469,17 @@ class ChatApp(Gtk.Application):
 
             rows[key] = entry
 
-        add_row("Genel arkaplan", "window_bg")
-        add_row("Input arkaplan", "input_bg")
-        add_row("Kullanıcı balon arkaplan", "user_bg")
-        add_row("Kullanıcı yazı rengi", "user_text")
-        add_row("Bot balon arkaplan", "bot_bg")
-        add_row("Bot yazı rengi", "bot_text")
-        add_row("Sidebar yazı rengi", "sidebar_text")
+        add_row(self("o_Window_BG"), "window_bg")
+        add_row(self("o_Input_BG"), "input_bg")
+        add_row(self("o_User_BG"), "user_bg")
+        add_row(self("o_User_Text"), "user_text")
+        add_row(self("o_Bot_BG"), "bot_bg")
+        add_row(self("o_Bot_Text"), "bot_text")
+        add_row(self("o_Sidebar_Text"), "sidebar_text")
 
         hint = Gtk.Label(
             label=(
-                f"Şu anda {mode_name} renklerini düzenliyorsun.\n"
-                "Hex formatı kullan: örn #303643"
+                f"{self('o_Color_Edit_Hint')}"
             )
         )
         hint.set_xalign(0)
@@ -2290,7 +2487,7 @@ class ChatApp(Gtk.Application):
         hint.add_css_class("dim-label")
         content.append(hint)
 
-        bg_path_label = Gtk.Label(label="Chat arkaplan resmi")
+        bg_path_label = Gtk.Label(label=f"{self('o_Background_Hint')}")
         bg_path_label.set_xalign(0)
         content.append(bg_path_label)
 
@@ -2298,11 +2495,11 @@ class ChatApp(Gtk.Application):
 
         bg_path_entry = Gtk.Entry()
         bg_path_entry.set_hexpand(True)
-        bg_path_entry.set_placeholder_text("/dosya-yolu/resim.png")
+        self.bind_i18n(bg_path_entry, "placeholder", "o_Background_Path_Placeholder")
         bg_path_entry.set_text(self._get_chat_bg_image_path())
 
-        bg_pick_btn = Gtk.Button(label="Seç")
-        bg_clear_btn = Gtk.Button(label="Temizle")
+        bg_pick_btn = Gtk.Button(label=f"{self('o_Select_Image')}")
+        bg_clear_btn = Gtk.Button(label=f"{self('o_Clear')}")
         bg_pick_btn.connect("clicked", on_pick_bg)
         bg_clear_btn.connect("clicked", on_clear_bg)
 
@@ -2312,7 +2509,7 @@ class ChatApp(Gtk.Application):
         content.append(bg_path_controls)
 
 
-        reset_btn = Gtk.Button(label="Varsayılana dön")
+        reset_btn = Gtk.Button(label=f"{self('o_Reset_Default')}")
         content.append(reset_btn)
 
         cancel_btn = Gtk.Button()
@@ -2368,6 +2565,9 @@ class ChatApp(Gtk.Application):
         dialog.present()
 
     def open_style_dialog(self):
+        dialog = Gtk.Dialog(transient_for=self.win)
+        self.bind_i18n(dialog, "title", "o_Response_Style")
+
         dialog = Gtk.Dialog(title="Cevap Tarzı", transient_for=self.win)
         dialog.set_modal(True)
 
@@ -2375,7 +2575,7 @@ class ChatApp(Gtk.Application):
         content.set_spacing(8)
 
         entry = Gtk.Entry()
-        entry.set_placeholder_text("Örn: Samimi ve esprili konuş")
+        self.bind_i18n(entry, "placeholder", "o_Response_Style_Placeholder")
 
         cfg = self.load_config()
         entry.set_text(cfg.get("response_style", "") or "")
@@ -2492,12 +2692,12 @@ class ChatApp(Gtk.Application):
         dialog = Gtk.Dialog()
         dialog.set_transient_for(self.win)
         dialog.set_modal(True)
-        dialog.set_title("OpenRouter API Key")
+        self.bind_i18n(dialog, "title", "o_OpenRouter_API_Key")
 
         content = dialog.get_content_area()
 
         entry = Gtk.Entry()
-        entry.set_placeholder_text("OpenRouter API Key girin...")
+        self.bind_i18n(entry, "placeholder", "o_OpenRouter_Placeholder")
         entry.set_visibility(False)
         content.append(entry)
         # Ctrl+V ile yapıştırmayı garanti et
@@ -2823,6 +3023,9 @@ class ChatApp(Gtk.Application):
         if not (0 <= idx < len(messages)):
             return
 
+        if getattr(self, "is_generating", False):
+            return
+
         role = (messages[idx].get("role") or "").strip()
         content = (messages[idx].get("content") or "").strip()
         if not content:
@@ -2952,6 +3155,9 @@ class ChatApp(Gtk.Application):
         self.auto_scroll_enabled = True
         self.load_chat()
         self.show_typing_indicator()
+
+        self.ai_stop_requested = False
+        self.set_generating_state(True)
 
         # 6) AI çağır: zincir referanslarla birlikte
         threading.Thread(target=self.call_ai, args=(selected_arg,), daemon=True).start()
@@ -3287,7 +3493,11 @@ class ChatApp(Gtk.Application):
                 c = int(u.get("completion_tokens", 0) or 0)
                 t = int(u.get("total_tokens", 0) or 0)
 
-                usage_txt = f"Girdi token: {p} | Çıktı token: {c} | Toplam: {t}"
+                usage_txt = (
+                    f"{self('o_Input_Tokens')}: {p} | "
+                    f"{self('o_Output_Tokens')}: {c} | "
+                    f"{self('o_Total_Tokens')}: {t}"
+                )
 
                 usage_label = Gtk.Label(label=usage_txt)
                 usage_label.set_xalign(0)
@@ -3314,7 +3524,29 @@ class ChatApp(Gtk.Application):
                 bubble.add_css_class("selected")
 
             # ---------------- APPLY BUTTONS ----------------
+            gen_st = msg.get("gen_status")
+            if isinstance(gen_st, dict) and "status" in gen_st:
+                gen_status = gen_st.get("status")
+                gen_err = (gen_st.get("err") or "").strip()
+
+                if gen_status == "cancel":
+                    txt = f"⏭️ {self('o_Cancelled')}"
+                elif gen_status == "fail":
+                    txt = f"❌ {self('o_Generation_Failed')}: {gen_err}"
+                else:
+                    txt = ""
+
+                if txt:
+                    status_label = Gtk.Label(label=txt)
+                    status_label.set_wrap(True)
+                    status_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                    status_label.set_xalign(0)
+                    status_label.add_css_class("refs-preview-line")
+                    bubble.append(status_label)
+
+
             if msg.get("role") != "user":
+
                 # daha önce sonuç yazıldıysa buton göstermeyelim, sadece feedback gösterelim
                 st = msg.get("apply_status")
                 if isinstance(st, dict) and "status" in st:
@@ -3322,11 +3554,11 @@ class ChatApp(Gtk.Application):
                     err = (st.get("err") or "").strip()
 
                     if status == "ok":
-                        txt = "✅ Dosya değiştirildi."
+                        txt = f"✅ {self('o_File_Changed')}"
                     elif status == "fail":
                         txt = f"❌ APPLY FAILED: {err}"
                     elif status == "cancel":
-                        txt = "⏭️ İşlem iptal edildi."
+                        txt = f"⏭️ {self('o_Cancelled')}"
                     else:
                         txt = ""
 
@@ -3458,11 +3690,14 @@ class ChatApp(Gtk.Application):
 
             # AI düşünüyorsa typing satırını en alta geri ekle
             if getattr(self, "typing_active", False):
-                if kept_typing_row is not None:
-                    self.chat_box.append(kept_typing_row)
-                else:
-                    # typing_row yoksa güvenli fallback
-                    self.show_typing_indicator()
+                try:
+                    if self.typing_row.get_parent() is not self.content_box:
+                        parent = self.typing_row.get_parent()
+                        if parent is not None:
+                            parent.remove(self.typing_row)
+                        self.content_box.append(self.typing_row)
+                except Exception:
+                    pass
 
         GLib.idle_add(self.scroll_to_bottom)
 
@@ -3824,20 +4059,30 @@ class ChatApp(Gtk.Application):
                 messages = json.load(f) or []
 
             changed = False
+
             if messages and isinstance(messages[-1], dict):
                 last = messages[-1]
+
+                # Son mesaj boş streaming bot placeholder ise sil
                 if last.get("role") in ("bot", "assistant") and last.get("streaming"):
                     content = (last.get("content") or "").strip()
+
                     if not content:
                         messages.pop()
                         changed = True
-                    else:
-                        last.pop("streaming", None)
-                        changed = True
+
+            # Cancel bilgisini son user mesajına yaz
+            for j in range(len(messages) - 1, -1, -1):
+                msg = messages[j]
+                if msg.get("role") == "user":
+                    msg["gen_status"] = {"status": "cancel", "err": ""}
+                    changed = True
+                    break
 
             if changed:
                 with open(self.current_chat, "w", encoding="utf-8") as f:
                     json.dump(messages, f, ensure_ascii=False, indent=2)
+
         except Exception:
             pass
 
@@ -4260,6 +4505,8 @@ class ChatApp(Gtk.Application):
             partial = ""
             last_len = 0
             last_push = 0
+            stderr_chunks = []
+            json_mode = False
 
             out_fd = proc.stdout.fileno()
             err_fd = proc.stderr.fileno()
@@ -4274,18 +4521,28 @@ class ChatApp(Gtk.Application):
                         text = decoder.decode(data)
                         if text:
                             partial += text
+
+                            # Gelen çıktı JSON gibi mi?
+                            stripped = partial.lstrip()
+                            if stripped.startswith("{") or stripped.startswith("["):
+                                json_mode = True
+
                             # daha sık güncelle (stream hissi)
                             now = GLib.get_monotonic_time()  # mikro-saniye
                             if (now - last_push) > 8_000:   # 8ms
                                 last_push = now
                                 new_part = partial[last_len:]
                                 last_len = len(partial)
-                                if new_part:
+
+                                # Sadece düz metinse ekrana akıt
+                                if new_part and not json_mode:
                                     GLib.idle_add(self.update_stream_text, new_part)
 
+
                 if err_fd in rlist:
-                    # stderr'i biriktirmek istersen burada alabilirsin (şimdilik sadece drain)
-                    _ = os.read(err_fd, 4096)
+                    err_data = os.read(err_fd, 4096)
+                    if err_data:
+                        stderr_chunks.append(err_data.decode("utf-8", errors="replace"))
 
                 if proc.poll() is not None:
                     break
@@ -4297,25 +4554,24 @@ class ChatApp(Gtk.Application):
 
             new_part = partial[last_len:]
             last_len = len(partial)
-            if new_part:
+            if new_part and not json_mode:
                 GLib.idle_add(self.update_stream_text, new_part)
 
+            proc.wait()
             rc = proc.returncode
             self.ai_proc = None
+
+            stderr_text = "".join(stderr_chunks).strip()
 
             if self.ai_stop_requested:
                 GLib.idle_add(self.after_ai_response)
                 return
 
             if rc != 0:
-                err = ""
-                try:
-                    err_bytes = proc.stderr.read() if proc.stderr else b""
-                    err = err_bytes.decode("utf-8", errors="replace").strip() if err_bytes else "Bilinmeyen hata"
-                except Exception:
-                    err = "Bilinmeyen hata"
+                err = stderr_text or partial.strip() or "Bilinmeyen hata"
                 GLib.idle_add(self.handle_ai_error, err)
             else:
+                GLib.idle_add(self.finalize_ai_response, partial)
                 GLib.idle_add(self.after_ai_response)
 
         except Exception as e:
