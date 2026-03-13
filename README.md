@@ -17,7 +17,7 @@
    ```
    sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
-   #voice record
+   🎙️voice record
    >pw-record  
    ```
    sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
@@ -36,7 +36,7 @@
    ```
    sudo apt update && sudo apt install -y python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 fonts-noto-color-emoji
    ```
-   #voice record
+   🎙️voice record
    >pw-record  
    ```
    sudo apt update && sudo apt install -y pipewire wireplumber pipewire-audio-client-libraries pipewire-pulse
