@@ -14,15 +14,16 @@
    <details>
    <summary>Arch Packages</summary>
 
+
+   ```
+   sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
+   ```
+
+   
    ```
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
-   ```
-   
-      
-   ```
-   sudo pacman -S --needed python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
    <br><br>
    Offline Voice Input for Linux
