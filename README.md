@@ -40,7 +40,7 @@
    sudo pacman -S --needed alsa-utils
    ```
 
-    📄Offline Speech to Text
+   📄 Offline Speech to Text
     
    ```
    sudo pacman -S --needed cmake make gcc
