@@ -2,18 +2,13 @@
 <!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
 
 ## 🔎 Preparation
-<details>
-<summary>1. Components</summary>
-'1' ESP-8266 0.96 inch oled development board<br>
-'3' Button
-
-
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 2. `Make sure you place your files in the following directories.`
    ~/capture-ai/ui.py  
    ~/capture-ai/ai.py  
    ~/capture-ai/capture-ai.sh  
    ~/.config/capture-ai/config.json
+   <details>
 <summary>3. Download Packages</summary>
 >Arch  
 
