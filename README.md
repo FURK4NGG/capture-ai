@@ -27,6 +27,8 @@
    ```
    sudo pacman -S --needed alsa-utils
    ```
+   <br>
+   <br>
    </details>
 
 
