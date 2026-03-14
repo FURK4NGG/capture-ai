@@ -1,5 +1,6 @@
 # ai-controller
 <!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
+<!-- ekran goruntusu, dosya acma -->
 
 ## 🔎 Preparation
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
@@ -191,10 +192,6 @@ sudo pacman -S --needed \
   grim slurp swappy wl-clipboard \
   wf-recorder ffmpeg
 
-#Enviroment
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
 
 ~/.config/capture-ai/env.sh --> export OPENROUTER_API_KEY="sk-or-v..."
 
@@ -205,34 +202,6 @@ $capture-ai = /home/$USER/capture-ai/capture-ai.sh
 bind = $mainMod SHIFT, Q, exec, $capture-ai image  
 bind = $mainMod, Q, exec, $capture-ai text  
 
- 
-
-paket kontrol  
-command -v pw-record || echo "pw-record yok"  
-command -v arecord  || echo "arecord yok"  
-
-git clone https://github.com/ggml-org/whisper.cpp.git  
-cd whisper.cpp  
-cmake -B build  
-cmake --build build -j --config Release  
-
-ls build/bin  
- #... whisper-cli, main, whisper-server, ...  
-
-Tiny model indirme (hafif, düşük CPU)  
-mkdir -p ~/.local/share/whisper  
-wget -O ~/.local/share/whisper/ggml-tiny.bin \  
-  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin  
-
-paket test  
-ls -l ~/whisper.cpp/build/bin/whisper-cli  
-ls -lh ~/.local/share/whisper/ggml-tiny.bin  
-
-Manual test (çalıştığını doğruladık)  
-/home/bob/whisper.cpp/build/bin/whisper-cli \  
-  -m /home/bob/.local/share/whisper/ggml-tiny.bin \  
-  -f /tmp/capture-ai-mic-20260228-205753.wav \  
-  -l tr  
 
 <br><br>
 
