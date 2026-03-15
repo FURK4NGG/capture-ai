@@ -89,9 +89,8 @@
    <br><br>
    Screenshot
    ```
-   sudo pacman -S --needed \
-     grim slurp swappy wl-clipboard \
-     wf-recorder ffmpeg
+   sudo apt update
+   sudo apt install -y scrot libnotify-bin dunst
    ```
    <br>
    <br>
