@@ -115,7 +115,29 @@ take_selection() {
     elif command -v scrot >/dev/null 2>&1; then
         local file="$DIR/secili-alan-$(date +%Y%m%d-%H%M%S).png"
         scrot -s "$file"
-        notify_ok "Selected Area"
+    
+        if [ ! -f "$file" ]; then
+            exit 0
+        fi
+    
+        if command -v identify >/dev/null 2>&1; then
+            local size w h
+            size="$(identify -format "%w %h" "$file" 2>/dev/null || true)"
+            w="${size%% *}"
+            h="${size##* }"
+    
+            case "$w" in ''|*[!0-9]*) w=999 ;; esac
+            case "$h" in ''|*[!0-9]*) h=999 ;; esac
+    
+            if [ "$w" -le 5 ] || [ "$h" -le 5 ]; then
+                notify_ok "Selected Screen"
+            else
+                notify_ok "Selected Area"
+            fi
+        else
+            notify_ok "Selected Area"
+        fi
+    
         printf '%s\n' "$file"
     else
         echo "No working area screenshot tool found (need grim+slurp or scrot)" >&2
