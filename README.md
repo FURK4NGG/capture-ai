@@ -89,8 +89,7 @@
    <br><br>
    Screenshot
    ```
-   sudo apt update
-   sudo apt install -y scrot libnotify-bin dunst
+   sudo pacman -S --needed grim slurp libnotify
    ```
    <br>
    <br>
