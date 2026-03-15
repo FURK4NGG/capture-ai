@@ -14,21 +14,35 @@ notify_ok() {
 
 take_fullscreen() {
     local file="$DIR/tam-ekran-$(date +%Y%m%d-%H%M%S).png"
-    grim "$file"
+
+    if [ "${XDG_SESSION_TYPE:-}" = "wayland" ] && command -v grim >/dev/null 2>&1; then
+        grim "$file"
+    elif command -v scrot >/dev/null 2>&1; then
+        scrot "$file"
+    else
+        echo "No working screenshot tool found" >&2
+        exit 1
+    fi
+
     notify_ok "All Screens"
     printf '%s\n' "$file"
 }
 
-take_selection_or_click() {
-    local geom file
-    geom="$(slurp 2>/dev/null || true)"
+take_selection() {
+    local file="$DIR/secili-alan-$(date +%Y%m%d-%H%M%S).png"
 
-    # kullanıcı iptal ettiyse sessiz çık
-    [ -z "$geom" ] && exit 0
+    if [ "${XDG_SESSION_TYPE:-}" = "wayland" ] && command -v grim >/dev/null 2>&1 && command -v slurp >/dev/null 2>&1; then
+        local geom
+        geom="$(slurp 2>/dev/null || true)"
+        [ -z "$geom" ] && exit 0
+        grim -g "$geom" "$file"
+    elif command -v scrot >/dev/null 2>&1; then
+        scrot -s "$file"
+    else
+        echo "No working area screenshot tool found" >&2
+        exit 1
+    fi
 
-    # küçük seçimleri de direkt seçili alan gibi kaydet
-    file="$DIR/secili-alan-$(date +%Y%m%d-%H%M%S).png"
-    grim -g "$geom" "$file"
     notify_ok "Selected Area"
     printf '%s\n' "$file"
 }
@@ -38,17 +52,17 @@ case "$ARG" in
         take_fullscreen
         ;;
     only-one)
-        take_selection_or_click
+        take_selection
         ;;
     -h|--help|help|-help)
-        echo "Kullanim/Usage:"
-        echo "  $0           -> Take screenshot for all screens"
-        echo "  $0 only-one  -> Select area and save it"
+        echo "Usage:"
+        echo "  $0           -> Take fullscreen screenshot"
+        echo "  $0 only-one  -> Select area screenshot"
         ;;
     *)
-        echo "Kullanim/Usage:"
-        echo "  $0           -> Take screenshot for all screens"
-        echo "  $0 only-one  -> Select area and save it"
+        echo "Usage:"
+        echo "  $0           -> Take fullscreen screenshot"
+        echo "  $0 only-one  -> Select area screenshot"
         exit 1
         ;;
 esac
