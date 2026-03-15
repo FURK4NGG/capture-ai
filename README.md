@@ -90,7 +90,7 @@
    <br><br>
    Screenshot
    ```
-   sudo pacman -S --needed grim slurp libnotify
+   sudo pacman -S --needed grim slurp mako libnotify
    ```
    <br>
    <br>
