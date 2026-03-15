@@ -1255,6 +1255,188 @@ class ChatApp(Gtk.Application):
 
     # ---------------- IMAGE,DOCS PREVIEW AND ATTACH MENU ----------------
 
+    def is_debian_like(self) -> bool:
+        try:
+            os_release = Path("/etc/os-release")
+            if not os_release.exists():
+                return False
+
+            data = os_release.read_text(encoding="utf-8", errors="ignore").lower()
+
+            keys = []
+            for line in data.splitlines():
+                if "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                v = v.strip().strip('"').strip("'")
+                if k in ("id", "id_like"):
+                    keys.append(v)
+
+            joined = " ".join(keys)
+            return any(x in joined for x in ("debian", "ubuntu", "raspbian", "linuxmint", "pop"))
+        except Exception:
+            return False
+
+
+    def should_use_native_file_chooser(self) -> bool:
+        # Debian/Ubuntu/Raspberry tarafında daha stabil fallback
+        return self.is_debian_like()
+
+
+    def open_files_dialog_portable(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
+        """
+        callback(paths: list[str]) çağrılır
+        """
+        callback = callback or (lambda paths: None)
+
+        if self.should_use_native_file_chooser():
+            self._open_files_dialog_native(title=title, image_only=image_only, multiple=multiple, callback=callback)
+        else:
+            self._open_files_dialog_modern(title=title, image_only=image_only, multiple=multiple, callback=callback)
+
+
+    def open_single_file_dialog_portable(self, title="Dosya Seç", image_only=False, callback=None):
+        """
+        callback(path: str | None) çağrılır
+        """
+        callback = callback or (lambda path: None)
+
+        if self.should_use_native_file_chooser():
+            self._open_single_file_dialog_native(title=title, image_only=image_only, callback=callback)
+        else:
+            self._open_single_file_dialog_modern(title=title, image_only=image_only, callback=callback)
+
+
+    def _build_file_filters(self, image_only=False):
+        img_filter = Gtk.FileFilter()
+        img_filter.set_name("Images")
+        img_filter.add_mime_type("image/png")
+        img_filter.add_mime_type("image/jpeg")
+        img_filter.add_mime_type("image/webp")
+        img_filter.add_mime_type("image/gif")
+        img_filter.add_mime_type("image/bmp")
+        img_filter.add_mime_type("image/tiff")
+
+        any_filter = Gtk.FileFilter()
+        any_filter.set_name("All files")
+        any_filter.add_pattern("*")
+
+        if image_only:
+            return [img_filter]
+        return [img_filter, any_filter]
+
+
+    def _open_files_dialog_modern(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
+        callback = callback or (lambda paths: None)
+
+        dialog = Gtk.FileDialog()
+        filters = self._build_file_filters(image_only=image_only)
+
+        flist = Gio.ListStore.new(Gtk.FileFilter)
+        for f in filters:
+            flist.append(f)
+        dialog.set_filters(flist)
+
+        if multiple:
+            def on_done(dlg, res):
+                try:
+                    files = dlg.open_multiple_finish(res)
+                except Exception:
+                    callback([])
+                    return
+
+                paths = []
+                if files:
+                    for i in range(files.get_n_items()):
+                        gfile = files.get_item(i)
+                        if not gfile:
+                            continue
+                        p = gfile.get_path()
+                        if p:
+                            paths.append(p)
+                callback(paths)
+
+            dialog.open_multiple(self.win, None, on_done)
+        else:
+            def on_done(dlg, res):
+                try:
+                    gfile = dlg.open_finish(res)
+                except Exception:
+                    callback([])
+                    return
+
+                if not gfile:
+                    callback([])
+                    return
+
+                p = gfile.get_path()
+                callback([p] if p else [])
+
+            dialog.open(self.win, None, on_done)
+
+
+    def _open_single_file_dialog_modern(self, title="Dosya Seç", image_only=False, callback=None):
+        callback = callback or (lambda path: None)
+
+        def _cb(paths):
+            callback(paths[0] if paths else None)
+
+        self._open_files_dialog_modern(title=title, image_only=image_only, multiple=False, callback=_cb)
+
+
+    def _open_files_dialog_native(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
+        callback = callback or (lambda paths: None)
+
+        action = Gtk.FileChooserAction.OPEN
+        chooser = Gtk.FileChooserNative.new(title, self.win, action, self("o_Open") if hasattr(self, "__call__") else "Open", self("o_Cancel") if hasattr(self, "__call__") else "Cancel")
+        chooser.set_modal(True)
+        chooser.set_select_multiple(bool(multiple))
+
+        for f in self._build_file_filters(image_only=image_only):
+            chooser.add_filter(f)
+
+        def on_response(dlg, response):
+            paths = []
+
+            try:
+                if response == Gtk.ResponseType.ACCEPT:
+                    if multiple:
+                        model = dlg.get_files()
+                        if model:
+                            for i in range(model.get_n_items()):
+                                gfile = model.get_item(i)
+                                if not gfile:
+                                    continue
+                                p = gfile.get_path()
+                                if p:
+                                    paths.append(p)
+                    else:
+                        gfile = dlg.get_file()
+                        if gfile:
+                            p = gfile.get_path()
+                            if p:
+                                paths.append(p)
+            except Exception:
+                pass
+
+            dlg.destroy()
+            callback(paths)
+
+        chooser.connect("response", on_response)
+        chooser.show()
+
+
+    def _open_single_file_dialog_native(self, title="Dosya Seç", image_only=False, callback=None):
+        callback = callback or (lambda path: None)
+
+        def _cb(paths):
+            callback(paths[0] if paths else None)
+
+        self._open_files_dialog_native(title=title, image_only=image_only, multiple=False, callback=_cb)
+
+
+
+
     def _measure_text_px(self, widget: Gtk.Widget, text: str) -> int:
         # widget'in font context'iyle ölçüm yap
         ctx = widget.get_pango_context()
@@ -1365,53 +1547,13 @@ class ChatApp(Gtk.Application):
         pop.popup()
 
     def on_attach_clicked(self, *_):
-        # GTK4 FileDialog ile çoklu seçim
-        dialog = Gtk.FileDialog()
-
-        # Filter’lar
-        img_filter = Gtk.FileFilter()
-        img_filter.set_name("Images")
-        img_filter.add_mime_type("image/png")
-        img_filter.add_mime_type("image/jpeg")
-        img_filter.add_mime_type("image/webp")
-        img_filter.add_mime_type("image/gif")
-        img_filter.add_mime_type("image/bmp")
-        img_filter.add_mime_type("image/tiff")
-
-        any_filter = Gtk.FileFilter()
-        any_filter.set_name("All files")
-        any_filter.add_pattern("*")
-
-        flist = Gio.ListStore.new(Gtk.FileFilter)
-        flist.append(img_filter)
-        flist.append(any_filter)
-        dialog.set_filters(flist)
-
-        def on_done(dlg, res):
-            try:
-                files = dlg.open_multiple_finish(res)  # Gio.ListModel
-            except Exception:
-                return
-
-            if not files:
+        def on_paths_selected(paths):
+            if not paths:
                 return
 
             import mimetypes
-            for i in range(files.get_n_items()):
-                gfile = files.get_item(i)
-                if not gfile:
-                    continue
-                from urllib.parse import urlparse, unquote
 
-                path = gfile.get_path()
-
-                # Bazı sistemlerde get_path() None döner; URI'den düşür
-                if not path:
-                    uri = gfile.get_uri() or ""
-                    if uri.startswith("file://"):
-                        path = unquote(urlparse(uri).path)
-
-                # Hâlâ yoksa (remote vb.) geç
+            for path in paths:
                 if not path:
                     continue
 
@@ -1422,7 +1564,6 @@ class ChatApp(Gtk.Application):
                     if path not in self.pending_images:
                         self.pending_images.append(path)
                 else:
-                    # belge vb. -> dict olarak ekle + duplicate engelle
                     if not any(x.get("path") == path for x in self.pending_files):
                         self.pending_files.append({
                             "path": path,
@@ -1432,7 +1573,12 @@ class ChatApp(Gtk.Application):
 
             self.refresh_attachments_preview()
 
-        dialog.open_multiple(self.win, None, on_done)
+        self.open_files_dialog_portable(
+            title=self("o_Attach_File"),
+            image_only=False,
+            multiple=True,
+            callback=on_paths_selected
+        )
 
     def refresh_attachments_preview(self):
         try:
@@ -2412,42 +2558,15 @@ class ChatApp(Gtk.Application):
         rows = {}
 
         def on_pick_bg(*_):
-            try:
-                dialog_file = Gtk.FileDialog()
+            def on_path_selected(path):
+                if path:
+                    bg_path_entry.set_text(path)
 
-                img_filter = Gtk.FileFilter()
-                img_filter.set_name("Images")
-                img_filter.add_mime_type("image/png")
-                img_filter.add_mime_type("image/jpeg")
-                img_filter.add_mime_type("image/webp")
-                img_filter.add_mime_type("image/gif")
-                img_filter.add_mime_type("image/bmp")
-
-                any_filter = Gtk.FileFilter()
-                any_filter.set_name("All files")
-                any_filter.add_pattern("*")
-
-                flist = Gio.ListStore.new(Gtk.FileFilter)
-                flist.append(img_filter)
-                flist.append(any_filter)
-                dialog_file.set_filters(flist)
-
-                def on_done(dlg, res):
-                    try:
-                        gfile = dlg.open_finish(res)
-                    except Exception:
-                        return
-
-                    if not gfile:
-                        return
-
-                    path = gfile.get_path()
-                    if path:
-                        bg_path_entry.set_text(path)
-
-                dialog_file.open(self.win, None, on_done)
-            except Exception:
-                pass
+            self.open_single_file_dialog_portable(
+                title=self("o_Select_Image"),
+                image_only=True,
+                callback=on_path_selected
+            )
 
         def on_clear_bg(*_):
             bg_path_entry.set_text("")
@@ -4374,16 +4493,27 @@ class ChatApp(Gtk.Application):
 
     def build_zoomable_image_widget(self, image_path: str, width: int, height: int):
         p = Path(str(image_path))
-        file = Gio.File.new_for_path(str(p))
+        overlay = Gtk.Overlay()
 
-        pic = Gtk.Picture.new_for_file(file)
+        pic = Gtk.Picture()
         pic.set_can_shrink(True)
         pic.set_keep_aspect_ratio(True)
         pic.set_content_fit(Gtk.ContentFit.COVER)
         pic.set_size_request(width, height)
 
-        overlay = Gtk.Overlay()
-        overlay.set_child(pic)
+        try:
+            texture = Gdk.Texture.new_from_filename(str(p))
+            pic.set_paintable(texture)
+        except Exception as e:
+            print("image preview load error:", e)
+            fallback = Gtk.Label(label="Image")
+            fallback.set_size_request(width, height)
+            fallback.set_wrap(True)
+            fallback.set_xalign(0.5)
+            fallback.set_yalign(0.5)
+            overlay.set_child(fallback)
+        else:
+            overlay.set_child(pic)
 
         zoom_btn = Gtk.Button(label="⛶")
         zoom_btn.add_css_class("flat")
@@ -4438,8 +4568,7 @@ class ChatApp(Gtk.Application):
         scroller.set_hexpand(True)
         scroller.set_vexpand(True)
 
-        file = Gio.File.new_for_path(str(p))
-        pic = Gtk.Picture.new_for_file(file)
+        pic = Gtk.Picture()
         pic.set_can_shrink(True)
         pic.set_keep_aspect_ratio(True)
         pic.set_content_fit(Gtk.ContentFit.CONTAIN)
@@ -4448,7 +4577,18 @@ class ChatApp(Gtk.Application):
         pic.set_halign(Gtk.Align.CENTER)
         pic.set_valign(Gtk.Align.CENTER)
 
-        scroller.set_child(pic)
+        try:
+            texture = Gdk.Texture.new_from_filename(str(p))
+            pic.set_paintable(texture)
+        except Exception as e:
+            print("image viewer load error:", e)
+            fallback = Gtk.Label(label=f"Image could not be loaded:\n{p.name}")
+            fallback.set_wrap(True)
+            fallback.set_xalign(0.5)
+            fallback.set_yalign(0.5)
+            scroller.set_child(fallback)
+        else:
+            scroller.set_child(pic)
 
         win.set_child(outer)
 
