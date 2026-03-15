@@ -184,8 +184,7 @@
    <br><br>
    Screenshot
    ```
-   sudo apt update
-   sudo apt install -y grim slurp swappy wl-clipboard wf-recorder ffmpeg libnotify-bin
+   sudo apt install -y grim slurp scrot libnotify-bin
    ```
    <br>
    <br>
