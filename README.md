@@ -227,8 +227,9 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] Adding documents
 - [x] AI can access and change your documents within permission
 - [x] Change UI colors
-- [x] Language support [Turkish, English] 
-- [ ] Compatible with macOS, Windows, and Linux devices
+- [x] Language support [Turkish, English]
+- [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
+- [ ] Compatible with macOS, Windows
 - [ ] Run local text model
 - [ ] Control with terminal
  
