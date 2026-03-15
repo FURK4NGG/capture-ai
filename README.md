@@ -27,7 +27,7 @@
    pip install -r requirements.txt
    ```
    <br><br>
-   Offline Voice Input for Linux
+   Offline Voice Input (Speech → Text)
 
    🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
 
@@ -122,7 +122,7 @@
    pip install -r requirements.txt
    ```
    <br><br>
-   Offline Voice Input for Linux
+   Offline Voice Input (Speech → Text)
 
    🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
 
@@ -185,7 +185,7 @@
    Screenshot
    ```
    sudo apt update
-   sudo apt install -y grim slurp swappy wl-clipboard wf-recorder ffmpeg libnotify-bin python3
+   sudo apt install -y grim slurp swappy wl-clipboard wf-recorder ffmpeg libnotify-bin
    ```
    <br>
    <br>
