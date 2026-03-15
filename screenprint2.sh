@@ -97,10 +97,15 @@ sys.exit(1)
         fi
     fi
 
-    # Normal alan seçimi
     local file="$DIR/secili-alan-$(date +%Y%m%d-%H%M%S).png"
     grim -g "$geom" "$file"
-    notify_ok "Selected Area"
+
+    if [ "$w" -le 5 ] || [ "$h" -le 5 ]; then
+        notify_ok "Selected Screen"
+    else
+        notify_ok "Selected Area"
+    fi
+
     printf '%s\n' "$file"
 }
 
