@@ -1383,17 +1383,23 @@ class ChatApp(Gtk.Application):
 
         self._open_files_dialog_modern(title=title, image_only=image_only, multiple=False, callback=_cb)
 
-
     def _open_files_dialog_native(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
         callback = callback or (lambda paths: None)
 
-        action = Gtk.FileChooserAction.OPEN
-        chooser = Gtk.FileChooserNative.new(title, self.win, action, self("o_Open") if hasattr(self, "__call__") else "Open", self("o_Cancel") if hasattr(self, "__call__") else "Cancel")
-        chooser.set_modal(True)
-        chooser.set_select_multiple(bool(multiple))
+        dialog = Gtk.FileChooserDialog(
+            title=title,
+            transient_for=self.win,
+            modal=True,
+            action=Gtk.FileChooserAction.OPEN
+        )
+
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Open"), Gtk.ResponseType.ACCEPT)
+
+        dialog.set_select_multiple(bool(multiple))
 
         for f in self._build_file_filters(image_only=image_only):
-            chooser.add_filter(f)
+            dialog.add_filter(f)
 
         def on_response(dlg, response):
             paths = []
@@ -1416,15 +1422,14 @@ class ChatApp(Gtk.Application):
                             p = gfile.get_path()
                             if p:
                                 paths.append(p)
-            except Exception:
-                pass
+            except Exception as e:
+                print("file chooser error:", e)
 
             dlg.destroy()
             callback(paths)
 
-        chooser.connect("response", on_response)
-        chooser.show()
-
+        dialog.connect("response", on_response)
+        dialog.present()
 
     def _open_single_file_dialog_native(self, title="Dosya Seç", image_only=False, callback=None):
         callback = callback or (lambda path: None)
@@ -1432,8 +1437,12 @@ class ChatApp(Gtk.Application):
         def _cb(paths):
             callback(paths[0] if paths else None)
 
-        self._open_files_dialog_native(title=title, image_only=image_only, multiple=False, callback=_cb)
-
+        self._open_files_dialog_native(
+            title=title,
+            image_only=image_only,
+            multiple=False,
+            callback=_cb
+        )
 
 
 
