@@ -86,6 +86,13 @@
      -f /tmp/capture-ai-mic-20260228-205753.wav \  
      -l tr
    ```
+   <br><br>
+   Screenshot
+   ```
+   sudo pacman -S --needed \
+     grim slurp swappy wl-clipboard \
+     wf-recorder ffmpeg
+   ```
    <br>
    <br>
    </details>
@@ -175,6 +182,12 @@
      -f /tmp/capture-ai-mic-20260228-205753.wav \
      -l tr
    ```
+   <br><br>
+   Screenshot
+   ```
+   sudo apt update
+   sudo apt install -y grim slurp swappy wl-clipboard wf-recorder ffmpeg libnotify-bin python3
+   ```
    <br>
    <br>
    </details>
@@ -185,12 +198,6 @@
 
 
 
-
-
-#screenhot
-sudo pacman -S --needed \
-  grim slurp swappy wl-clipboard \
-  wf-recorder ffmpeg
 
 
 ~/.config/capture-ai/env.sh --> export OPENROUTER_API_KEY="sk-or-v..."
