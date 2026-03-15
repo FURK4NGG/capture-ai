@@ -106,7 +106,7 @@
 
       
    ```
-   sudo apt update && sudo apt install -y python3 python3-venv python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 xdg-utils fonts-noto-color-emoji
+   sudo apt update && sudo apt install -y python3 python3-venv python3-gi gobject-introspection gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 xdg-utils fonts-noto-color-emoji
    ```
 
    Enviroment
@@ -123,7 +123,7 @@
    🎙️voice record
    >pw-record  
    ```
-   sudo apt install -y pipewire wireplumber pipewire-pulse pipewire-audio-client-libraries
+   sudo apt install -y pipewire wireplumber pipewire-pulse pipewire pipewire-pulse wireplumber
    ```
    
    >arecord
