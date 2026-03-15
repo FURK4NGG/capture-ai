@@ -184,7 +184,7 @@
    <br><br>
    Screenshot
    ```
-   sudo apt install -y grim slurp scrot libnotify-bin
+   sudo apt install -y grim slurp scrot dunst libnotify-bin
    ```
    <br>
    <br>
