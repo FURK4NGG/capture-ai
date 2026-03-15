@@ -129,7 +129,7 @@
    🎙️voice record
    >pw-record  
    ```
-   sudo apt install -y pipewire wireplumber pipewire-pulse pipewire pipewire-pulse wireplumber
+   sudo apt install -y pipewire wireplumber pipewire-pulse
    ```
    
    >arecord
