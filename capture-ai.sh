@@ -82,8 +82,8 @@ sys.exit(1)
 
   *)
     echo "Usage:"
-    echo "  capture-ai.sh image"
-    echo "  capture-ai.sh text"
-    echo "  capture-ai.sh cli"
+    echo "  capture-ai.sh image  -  Take a screenshot and start using it directly in the app"
+    echo "  capture-ai.sh text   -  Start the app without an image (text mode)"
+    echo "  capture-ai.sh cli    -  Run the app in terminal mode"
     ;;
 esac
