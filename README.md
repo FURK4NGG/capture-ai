@@ -10,7 +10,7 @@
    ~/capture-ai/ai.py  
    ~/capture-ai/cli.py  
    ~/capture-ai/capture-ai.sh  
-   ~/.config/capture-ai/config.json
+   ~/.config/capture-ai/config.json  
    ~/.config/capture-ai/requirements.txt  
 <details>
 <summary>3. Download Packages</summary>
