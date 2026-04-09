@@ -1,6 +1,5 @@
 # ai-controller
 <!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
-<!-- ekran goruntusu, dosya acma -->
 <!-- kurulum dosyasi ve sudo chmod -->
 
 ## 🔎 Preparation
