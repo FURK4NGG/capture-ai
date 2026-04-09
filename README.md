@@ -1,6 +1,6 @@
 # ai-controller
 <!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
-<!-- kurulum dosyasi ve sudo chmod -->
+<!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- for nerds ler falan -->
 
 ## 🔎 Preparation
