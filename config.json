@@ -79,6 +79,7 @@
       "o_Online_STT_Model": "Çevrimiçi STT Model",
       "o_Binary_Path": "Çalıştırılabilir Dosya Yolu",
       "o_Model_Path": "Model Dosya Yolu",
+      
       "o_Active_Chat": "Aktif Sohbet",
       "o_Active_Model": "Aktif Model",
       "o_Send_Message": "Mesaj Gönder",
@@ -182,6 +183,7 @@
       "o_Online_STT_Model": "Online STT Model",
       "o_Binary_Path": "Binary Path",
       "o_Model_Path": "Model Path",
+      
       "o_Active_Chat": "Active Chat",
       "o_Active_Model": "Active Model",
       "o_Send_Message": "Send Message",
