@@ -7,10 +7,11 @@
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 2. `Make sure you place your files in the following directories.`  
    ~/capture-ai/ui.py  
-   ~/capture-ai/ai.py
+   ~/capture-ai/ai.py  
    ~/capture-ai/cli.py  
    ~/capture-ai/capture-ai.sh  
    ~/.config/capture-ai/config.json
+   ~/.config/capture-ai/requirements.txt  
 <details>
 <summary>3. Download Packages</summary>
 
@@ -202,7 +203,9 @@
 ~/.config/capture-ai/env.sh --> export OPENROUTER_API_KEY="sk-or-v..."
 
 
-$capture-ai = /home/$USER/capture-ai/capture-ai.sh
+$capture-ai = /home/$USER/capture-ai/capture-ai.sh (image,text,cli)  
+or  
+bash capture-ai.sh (image,text,cli)  
 
 
 bind = $mainMod SHIFT, Q, exec, $capture-ai image  
@@ -230,9 +233,10 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] Change UI colors
 - [x] Language support [Turkish, English]
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
+- [x] Control with terminal
 - [ ] Compatible with macOS, Windows
 - [ ] Run local text model
-- [ ] Control with terminal
+
  
 ## 🔎 ALL APP FEATURES
 <details>
