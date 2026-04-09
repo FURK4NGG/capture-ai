@@ -82,6 +82,9 @@
       
       "o_Active_Chat": "Aktif Sohbet",
       "o_Active_Model": "Aktif Model",
+      "o_Pending_Attachments": "Bekleyen ekler",
+      "o_image": "görüntü",
+      "o_file": "dosya",
       "o_Send_Message": "Mesaj Gönder",
       "o_sub_Send_Message": "Mesajını yaz. Bitirmek için boş satır + Enter yap.",
       "o_Empty_Message": "Boş mesaj gönderilmedi.",
@@ -186,6 +189,9 @@
       
       "o_Active_Chat": "Active Chat",
       "o_Active_Model": "Active Model",
+      "o_Pending_Attachments": "Pending attachments",
+      "o_image": "image",
+      "o_file": "file",
       "o_Send_Message": "Send Message",
       "o_sub_Send_Message": "Type your message. Press Enter on an empty line to finish.",
       "o_Empty_Message": "Empty message was not sent.",
