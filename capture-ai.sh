@@ -76,9 +76,14 @@ sys.exit(1)
     python "$HOME/capture-ai/ui.py"
     ;;
 
+  cli)
+    python3 "$HOME/capture-ai/cli.py"
+    ;;
+
   *)
     echo "Usage:"
     echo "  capture-ai.sh image"
     echo "  capture-ai.sh text"
+    echo "  capture-ai.sh cli"
     ;;
 esac
