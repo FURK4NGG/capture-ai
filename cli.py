@@ -450,6 +450,51 @@ class ChatCLI:
 
     # ---------------- IMAGES / FILES ----------------
 
+    def list_pending_attachments(self):
+        items = []
+
+        for p in self.pending_images:
+            pp = Path(str(p))
+            items.append({
+                "type": "image",
+                "name": pp.name,
+                "path": str(pp.resolve()) if pp.exists() else str(pp)
+            })
+
+        for f in self.pending_files:
+            fp = Path(str(f.get("path", "")))
+            items.append({
+                "type": "file",
+                "name": f.get("name") or fp.name,
+                "path": str(fp.resolve()) if fp.exists() else str(fp)
+            })
+
+        return items
+    
+    def delete_pending_attachment_by_number(self, number: int) -> bool:
+        items = self.list_pending_attachments()
+        idx = number - 101
+
+        if not (0 <= idx < len(items)):
+            return False
+
+        item = items[idx]
+
+        if item["type"] == "image":
+            self.pending_images = [
+                x for x in self.pending_images
+                if str(Path(str(x)).resolve()) != item["path"]
+            ]
+        else:
+            self.pending_files = [
+                x for x in self.pending_files
+                if str(Path(str(x.get("path", ""))).resolve()) != item["path"]
+            ]
+
+        print(f"\n✔ {self('o_Delete')}: {item['name']}")
+        self._read_input(f"{self('o_to_Menu')}")
+        return True
+
     def save_base64_image(self, b64_data: str, ext: str = "png") -> str | None:
         try:
             raw = base64.b64decode(b64_data)
@@ -486,9 +531,7 @@ class ChatCLI:
         print(f"{self('o_Type_ESC')}")
         raw = self._read_input(f"\n{self('o_Drag_Drop')}: ")
 
-        if self._is_escape_input(raw):
-            self.pending_images.clear()
-            self.pending_files.clear()
+        if str(raw).strip().lower() in {"esc", ":q"} or raw == "\x1b":
             return False
 
         raw = raw.strip()
@@ -613,8 +656,6 @@ class ChatCLI:
 
         path = self._capture_photo_from_script()
         if not path:
-            self.pending_images.clear()
-            self.pending_files.clear()
             return False
 
         if path not in self.pending_images:
@@ -866,17 +907,31 @@ class ChatCLI:
     def print_header(self):
         self.active_model = self.get_chat_model(self.current_chat)
         print("\n" + "=" * 60)
-        print(f"{self('o_Active_Chat')} : {self.current_chat.stem}")
-        print(f"{self('o_Active_Model')}  : {self.active_model}")
-        print(f"{self('o_Language')}       : {self.get_ui_language()}")
+        labels = [
+            self('o_Active_Chat'),
+            self('o_Active_Model'),
+            self('o_Language')
+        ]
+
+        max_len = max(len(x) for x in labels)
+
+        print(f"{labels[0].ljust(max_len)} : {self.current_chat.stem}")
+        print(f"{labels[1].ljust(max_len)} : {self.active_model}")
+        print(f"{labels[2].ljust(max_len)} : {self.get_ui_language()}")
         print("=" * 60)
 
         if self.pending_images or self.pending_files:
-            print("Bekleyen ekler:")
+            print(f"{self('o_Pending_Attachments')}:")
+            n = 101
+
             for p in self.pending_images:
-                print(f"  [image] {Path(p).name}")
+                print(f"{n}) [{self('o_image')}] {Path(p).name} ({self('o_Delete')})")
+                n += 1
+
             for f in self.pending_files:
-                print(f"  [file ] {f.get('name')}")
+                print(f"{n}) [{self('o_file')}] {f.get('name')} ({self('o_Delete')})")
+                n += 1
+
             print("-" * 60)
 
     def menu_chat(self):
@@ -1194,6 +1249,12 @@ class ChatCLI:
             print(f"6) {self('o_Go_Back')}")
 
             choice = self._read_input(f"\n{self('o_Selection')}: ").strip()
+
+            if choice.isdigit():
+                num = int(choice)
+                if num >= 101:
+                    if self.delete_pending_attachment_by_number(num):
+                        continue
 
             if choice == "1":
                 self.send_message_flow()
