@@ -419,16 +419,41 @@ class ChatCLI:
 
         print(f"\n{self('o_New_Name')} {new_path.stem}")
 
+    def toggle_pin_current_chat(self):
+        cfg = self.load_config()
+
+        pinned = cfg.get("pinned_chats", [])
+        if not isinstance(pinned, list):
+            pinned = []
+
+        current_name = self.current_chat.name
+
+        if current_name in pinned:
+            cfg["pinned_chats"] = [x for x in pinned if x != current_name]
+            self.save_config(cfg)
+            print(f"\n✔ {self('o_Unpin')}: {self.current_chat.stem}")
+        else:
+            pinned.append(current_name)
+            cfg["pinned_chats"] = pinned
+            self.save_config(cfg)
+            print(f"\n✔ {self('o_Pin')}: {self.current_chat.stem}")
+
     def select_chat(self):
         chats = self.list_chat_files()
         if not chats:
             print("Hiç chat yok.")
             return
 
+        cfg = self.load_config()
+        pinned = cfg.get("pinned_chats", [])
+        if not isinstance(pinned, list):
+            pinned = []
+
         print(f"\n{self('o_Chats')}:")
         for i, p in enumerate(chats, 1):
             mark = "*" if p == self.current_chat else " "
-            print(f"{i}) {mark} {p.stem}")
+            pin_mark = "📌 " if p.name in pinned else ""
+            print(f"{i}) {mark} {pin_mark}{p.stem}")
 
         choice = self._read_input(f"\n{self('o_Selection')}: ").strip()
         if not choice.isdigit():
@@ -937,12 +962,23 @@ class ChatCLI:
     def menu_chat(self):
         while True:
             self.clear_screen()
+
+            cfg = self.load_config()
+            pinned = cfg.get("pinned_chats", [])
+            if not isinstance(pinned, list):
+                pinned = []
+
+            is_pinned = self.current_chat.name in pinned
+            pin_label = self("o_Unpin_Current_Chat") if is_pinned else self("o_Pin_Current_Chat")
+
             print(f"\n={self('o_Chats')}=")
+            print(f"{self('o_Active_Chat')}: {self.current_chat.stem}{' 📌' if is_pinned else ''}")
             print(f"1) {self('o_Change_Chat')}")
             print(f"2) {self('o_New_Chat')}")
             print(f"3) {self('o_Delete_Chat')}")
             print(f"4) {self('o_Rename')}")
-            print(f"5) {self('o_Go_Back')}")
+            print(f"5) {pin_label}")
+            print(f"6) {self('o_Go_Back')}")
 
             choice = self._read_input(f"\n{self('o_Selection')}: ").strip()
 
@@ -961,7 +997,8 @@ class ChatCLI:
                 print(f"\n{self('o_Delete_Chat')}:")
                 for i, p in enumerate(chats, 1):
                     mark = "*" if p == self.current_chat else " "
-                    print(f"{i}) {mark} {p.stem}")
+                    pin_mark = "📌 " if p.name in pinned else ""
+                    print(f"{i}) {mark} {pin_mark}{p.stem}")
 
                 sel = self._read_input(f"\n{self('o_Selection')}: ").strip()
 
@@ -979,7 +1016,6 @@ class ChatCLI:
                     self.delete_chat(chats[idx])
                     self._read_input(f"{self('o_to_Menu')}")
 
-
             elif choice == "4":
                 chats = self.list_chat_files()
                 if not chats:
@@ -989,7 +1025,8 @@ class ChatCLI:
                 print(f"\n{self('o_Rename_Chat')}:")
                 for i, p in enumerate(chats, 1):
                     mark = "*" if p == self.current_chat else " "
-                    print(f"{i}) {mark} {p.stem}")
+                    pin_mark = "📌 " if p.name in pinned else ""
+                    print(f"{i}) {mark} {pin_mark}{p.stem}")
 
                 sel = self._read_input(f"\n{self('o_Selection')}: ").strip()
 
@@ -1005,6 +1042,10 @@ class ChatCLI:
                 self._read_input(f"{self('o_to_Menu')}")
 
             elif choice == "5":
+                self.toggle_pin_current_chat()
+                self._read_input(f"{self('o_to_Menu')}")
+
+            elif choice == "6":
                 return
 
     def menu_models(self):
