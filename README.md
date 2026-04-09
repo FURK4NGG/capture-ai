@@ -21,6 +21,7 @@
 
 
    ```
+   ~/.config/capture-ai/
    sudo pacman -S --needed git python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
 
