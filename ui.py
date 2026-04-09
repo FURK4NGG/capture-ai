@@ -342,6 +342,7 @@ class ChatApp(Gtk.Application):
         self.win.set_default_size(1100, 750)
         self.ensure_color_configs()
         self.ensure_ui_i18n_config()
+        self.ensure_audio_input_config()
         self.apply_theme(dark_mode)
         self.apply_css()
 
@@ -483,7 +484,8 @@ class ChatApp(Gtk.Application):
         self.typing_row.set_halign(Gtk.Align.START)
         typing_bubble = Gtk.Box()
         typing_bubble.add_css_class("bot-bubble")
-        self.typing_label = Gtk.Label(label=f"{self('o_Thinking')}")
+        self.typing_label = Gtk.Label()
+        self.bind_i18n(self.typing_label, "label", "o_Thinking")
         self.typing_label.set_wrap(True)
         self.typing_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         self.typing_label.set_xalign(0)
@@ -662,57 +664,79 @@ class ChatApp(Gtk.Application):
         # refresh'i pad + preview yerleştikten sonra çağır (senin yaptığın doğru)
         self.refresh_attachments_preview()
 
-        input_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        input_row.set_hexpand(True)
-        input_row.set_halign(Gtk.Align.FILL)
-        input_row.set_vexpand(False)
-        input_wrapper.append(input_row)
+        # ---------------- SINGLE INPUT CARD ----------------
+        input_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        input_card.set_hexpand(True)
+        input_card.set_halign(Gtk.Align.FILL)
+        input_card.set_vexpand(False)
+        input_card.add_css_class("chat-input-box")
+        input_wrapper.append(input_card)
 
-        attach_btn = Gtk.Button(label="📎")
-        attach_btn.set_valign(Gtk.Align.END)
-        self.bind_i18n(attach_btn, "tooltip", "o_Attachments")
-        attach_btn.add_css_class("send_btn")
-        attach_btn.connect("clicked", self.open_attach_menu)
-        input_row.append(attach_btn)
-
-        self.attach_btn = attach_btn  # <-- anchor olarak lazım
-
+        # --- TOP: TEXT AREA ---
         self.textview = Gtk.TextView()
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.textview.set_hexpand(True)
         self.textview.set_vexpand(False)
         self.textview.set_size_request(260, -1)
         self.textview.add_css_class("chat-textview")
+        self.textview.set_top_margin(4)
+        self.textview.set_bottom_margin(4)
+        self.textview.set_left_margin(2)
+        self.textview.set_right_margin(2)
 
         self.text_scroll = Gtk.ScrolledWindow()
         self.text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.text_scroll.set_propagate_natural_height(True)
-        self.text_scroll.set_min_content_height(32)
-        self.text_scroll.set_max_content_height(140)
-        self.text_scroll.set_min_content_width(260)   # yatayda bundan küçük olmasın
-        self.text_scroll.set_max_content_width(9999)  # istersen sınırsız bırak
+        self.text_scroll.set_min_content_height(35)
+        self.text_scroll.set_max_content_height(180)
+        self.text_scroll.set_min_content_width(260)
+        self.text_scroll.set_max_content_width(9999)
         self.text_scroll.set_vexpand(False)
-        self.text_scroll.set_valign(Gtk.Align.END)
-        self.text_scroll.add_css_class("chat-input-box")
+        self.text_scroll.set_hexpand(True)
         self.text_scroll.set_child(self.textview)
-        input_row.append(self.text_scroll)
 
+        input_card.append(self.text_scroll)
+
+        # --- BOTTOM: CONTROLS ROW ---
+        controls_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        controls_row.set_hexpand(True)
+        controls_row.set_halign(Gtk.Align.FILL)
+        controls_row.set_vexpand(False)
+        input_card.append(controls_row)
+
+        # sol: attachments
+        attach_btn = Gtk.Button(label="📎")
+        attach_btn.set_valign(Gtk.Align.CENTER)
+        self.bind_i18n(attach_btn, "tooltip", "o_Attachments")
+        attach_btn.add_css_class("flat")
+        attach_btn.connect("clicked", self.open_attach_menu)
+        controls_row.append(attach_btn)
+
+        self.attach_btn = attach_btn
+
+        # orta boşluk
+        controls_spacer = Gtk.Box()
+        controls_spacer.set_hexpand(True)
+        controls_row.append(controls_spacer)
+
+        # sağ: mic sonra send
         mic_btn = Gtk.Button(label="🎙️")
-        mic_btn.set_valign(Gtk.Align.END)
+        mic_btn.set_valign(Gtk.Align.CENTER)
         self.bind_i18n(mic_btn, "tooltip", "o_Microphone")
         mic_btn.connect("clicked", self.toggle_voice_input)
-        mic_btn.add_css_class("send_btn")
-        input_row.append(mic_btn)
+        mic_btn.add_css_class("flat")
+        controls_row.append(mic_btn)
 
         self.mic_btn = mic_btn
         self._voice_proc = None
         self._last_wav = None
 
         send_btn = Gtk.Button(label="↑")
-        send_btn.set_valign(Gtk.Align.END)
+        send_btn.set_valign(Gtk.Align.CENTER)
+        self.bind_i18n(send_btn, "tooltip", "o_Send_Button")
         send_btn.connect("clicked", self.on_send_button_clicked)
-        send_btn.add_css_class("send_btn")
-        input_row.append(send_btn)
+        send_btn.add_css_class("flat")
+        controls_row.append(send_btn)
 
         self.send_btn = send_btn
 
@@ -726,7 +750,7 @@ class ChatApp(Gtk.Application):
         self.scroll_btn.set_size_request(36, 36)
         self.scroll_btn.set_valign(Gtk.Align.END)
         self.scroll_btn.set_halign(Gtk.Align.END)
-        self.scroll_btn.set_margin_bottom(110)   # preview+input üstünde dursun
+        self.scroll_btn.set_margin_bottom(150)   # preview+input üstünde dursun
         self.scroll_btn.set_margin_end(20)
         self.scroll_btn.add_css_class("scroll-btn")
         self.bind_i18n(self.scroll_btn, "tooltip", "o_Scroll_Down")
@@ -804,9 +828,28 @@ class ChatApp(Gtk.Application):
 
         .chat-input-box {{
             background: {input_bg};
-            border-radius: 14px;
+            border-radius: 22px;
             margin-bottom: 8px;
-            padding: 6px 10px;
+            padding: 12px 14px 10px 14px;
+        }}
+
+        .scroll-btn {{
+            background: {input_bg};
+            outline: 1px solid rgba(169,169,169,1);
+        }}
+
+        window.dark .chat-input-box {{
+            background: {input_bg};
+            outline: 1px solid rgba(255,255,255,0.08);
+        }}
+
+        window.light .chat-input-box {{
+            background: {input_bg};
+            outline: 1px solid rgba(0,0,0,0.06);
+        }}
+
+        .chat-textview {{
+            background: transparent;
         }}
 
         .attach-chip {{
@@ -818,19 +861,6 @@ class ChatApp(Gtk.Application):
 
         window.light .attach-chip {{
             background: rgba(0,0,0,0.06);
-        }}
-
-        window.dark .chat-input-box {{
-            background: {input_bg};
-            outline: 1px solid #777C6D;
-        }}
-
-        window.light .chat-input-box {{
-            background: {input_bg};
-        }}
-
-        .send_btn {{
-           margin-bottom: 14px;
         }}
 
         .attach-x {{
@@ -949,7 +979,7 @@ class ChatApp(Gtk.Application):
             outline: 2px solid #ff9800;
         }}
 
-        
+
         .code-block {{
             background: #1e1e1e;
             border-radius: 8px;
@@ -975,15 +1005,15 @@ class ChatApp(Gtk.Application):
         display = Gdk.Display.get_default()
         if display:
             Gtk.StyleContext.add_provider_for_display(
-                display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-            )
+                    display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                    )
 
     def apply_theme(self, is_dark: bool):
         is_dark = bool(is_dark)
         style_manager = Adw.StyleManager.get_default()
         style_manager.set_color_scheme(
-            Adw.ColorScheme.FORCE_DARK if is_dark else Adw.ColorScheme.FORCE_LIGHT
-        )
+                Adw.ColorScheme.FORCE_DARK if is_dark else Adw.ColorScheme.FORCE_LIGHT
+                )
         self.win.remove_css_class("dark")
         self.win.remove_css_class("light")
         self.win.add_css_class("dark" if is_dark else "light")
@@ -1387,11 +1417,11 @@ class ChatApp(Gtk.Application):
         callback = callback or (lambda paths: None)
 
         dialog = Gtk.FileChooserDialog(
-            title=title,
-            transient_for=self.win,
-            modal=True,
-            action=Gtk.FileChooserAction.OPEN
-        )
+                title=title,
+                transient_for=self.win,
+                modal=True,
+                action=Gtk.FileChooserAction.OPEN
+                )
 
         dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
         dialog.add_button(self("o_Open"), Gtk.ResponseType.ACCEPT)
@@ -1438,11 +1468,11 @@ class ChatApp(Gtk.Application):
             callback(paths[0] if paths else None)
 
         self._open_files_dialog_native(
-            title=title,
-            image_only=image_only,
-            multiple=False,
-            callback=_cb
-        )
+                title=title,
+                image_only=image_only,
+                multiple=False,
+                callback=_cb
+                )
 
 
 
@@ -1466,49 +1496,81 @@ class ChatApp(Gtk.Application):
             GLib.idle_add(self.handle_ai_error, f"Script bulunamadı: {script}")
             return
 
+        watch_dirs = [Path.home() / "Resimler", Path.home() / "Pictures", Path("/tmp")]
+
+        def collect_candidates():
+            out = []
+            for d in watch_dirs:
+                if not d.exists():
+                    continue
+                out += list(d.glob("screen*.*"))
+                out += list(d.glob("capture*.*"))
+                out += list(d.glob("shot*.*"))
+                out += list(d.glob("*.png"))
+                out += list(d.glob("*.jpg"))
+                out += list(d.glob("*.jpeg"))
+            return [p for p in out if p.exists() and p.is_file()]
+
         try:
-            # Scriptin stdout'a path basmasını destekliyoruz (en iyi yöntem)
+            # Script çalışmadan önce mevcut dosyaları kaydet
+            before_files = {}
+            for pth in collect_candidates():
+                try:
+                    before_files[str(pth.resolve())] = pth.stat().st_mtime
+                except Exception:
+                    pass
+
+            start_ts = datetime.now().timestamp()
+
             p = subprocess.run(
                 [str(script), "only-one"],
                 capture_output=True,
                 text=True
             )
 
+            # İptal veya hata: eski resmi seçme
             if p.returncode != 0:
-                err = (p.stderr or p.stdout or "screen-print failed").strip()
-                GLib.idle_add(self.handle_ai_error, err[:800])
                 return
 
             out = (p.stdout or "").strip()
 
-            # 1) stdout bir path döndürdüyse onu kullan
+            # 1) Script stdout'a path bastıysa sadece gerçekten yeniyse kabul et
             if out:
-                cand = Path(out).expanduser()
-                if cand.exists():
-                    GLib.idle_add(self.show_image_preview, str(cand))
-                    return
+                try:
+                    cand = Path(out).expanduser().resolve()
+                    if cand.exists() and cand.is_file():
+                        old_mtime = before_files.get(str(cand))
+                        new_mtime = cand.stat().st_mtime
 
-            # 2) stdout boşsa / path değilse: en son oluşan dosyayı bul (fallback)
-            #    (klasörlerini senin scriptine göre değiştir)
-            candidates = []
-            for d in [Path.home() / "Resimler", Path.home() / "Pictures", Path("/tmp")]:
-                if d.exists():
-                    candidates += list(d.glob("screen*.*"))
-                    candidates += list(d.glob("capture*.*"))
-                    candidates += list(d.glob("shot*.*"))
-                    candidates += list(d.glob("*.png"))
-                    candidates += list(d.glob("*.jpg"))
-                    candidates += list(d.glob("*.jpeg"))
+                        if old_mtime is None or new_mtime > old_mtime or new_mtime >= start_ts:
+                            GLib.idle_add(self.show_image_preview, str(cand))
+                            return
+                except Exception:
+                    pass
 
-            if not candidates:
-                GLib.idle_add(self.handle_ai_error, "Fotoğraf çekildi ama dosya bulunamadı (script path döndürmüyor olabilir).")
+            # 2) Fallback: sadece bu işlem sırasında oluşan / güncellenen dosyaları al
+            after_files = []
+            for cand in collect_candidates():
+                try:
+                    resolved = str(cand.resolve())
+                    mtime = cand.stat().st_mtime
+                    old_mtime = before_files.get(resolved)
+
+                    is_new = old_mtime is None
+                    is_updated = old_mtime is not None and mtime > old_mtime
+                    is_after_start = mtime >= start_ts
+
+                    if (is_new or is_updated) and is_after_start:
+                        after_files.append(cand)
+                except Exception:
+                    pass
+
+            # Yeni dosya yoksa hiçbir şey yapma
+            if not after_files:
                 return
 
-            newest = max(candidates, key=lambda x: x.stat().st_mtime if x.exists() else 0)
-            if newest.exists():
-                GLib.idle_add(self.show_image_preview, str(newest))
-            else:
-                GLib.idle_add(self.handle_ai_error, "Fotoğraf çekildi ama dosya bulunamadı.")
+            newest = max(after_files, key=lambda x: x.stat().st_mtime)
+            GLib.idle_add(self.show_image_preview, str(newest.resolve()))
 
         except Exception as e:
             GLib.idle_add(self.handle_ai_error, f"Fotoğraf çekme hatası: {e}")
@@ -1578,16 +1640,16 @@ class ChatApp(Gtk.Application):
                             "path": path,
                             "name": Path(path).name,
                             "edit": False
-                        })
+                            })
 
             self.refresh_attachments_preview()
 
         self.open_files_dialog_portable(
-            title=self("o_Attach_File"),
-            image_only=False,
-            multiple=True,
-            callback=on_paths_selected
-        )
+                title=self("o_Attach_File"),
+                image_only=False,
+                multiple=True,
+                callback=on_paths_selected
+                )
 
     def refresh_attachments_preview(self):
         try:
@@ -1759,7 +1821,7 @@ class ChatApp(Gtk.Application):
 
         # taşma var mı? (butonu ona göre aç/kapat)
         GLib.idle_add(self._update_preview_overflow)
-    
+
         if was_at_bottom:
             GLib.idle_add(self.scroll_to_bottom, True)
 
@@ -1854,14 +1916,14 @@ class ChatApp(Gtk.Application):
             return False
 
         dots = "." * (self.typing_dots % 4)
-        self.typing_label.set_text(f"Düşünüyor{dots}")
+        self.typing_label.set_text(f"{self('o_Thinking')}{dots}")
         self.typing_dots += 1
         return True
 
     def show_typing_indicator(self):
         self.stream_active = False
         self.typing_active = True
-        self.typing_label.set_text("Düşünüyor...")
+        self.typing_label.set_text(f"{self('o_Thinking')}...")
         self.typing_row.set_visible(True)
         self.typing_dots = 0
         GLib.timeout_add(500, self.animate_typing)
@@ -1887,7 +1949,7 @@ class ChatApp(Gtk.Application):
                 messages.append({
                     "role": "info",
                     "content": self("o_Cancelled")
-                })
+                    })
 
                 with open(self.current_chat, "w", encoding="utf-8") as f:
                     json.dump(messages, f, ensure_ascii=False, indent=2)
@@ -1936,27 +1998,30 @@ class ChatApp(Gtk.Application):
         if len(models) <= 1:
             dialog = Gtk.Dialog()
             dialog.set_transient_for(self.win)
+            self.bind_i18n(dialog, "title", "o_Min_Model_Title")
             dialog.set_modal(True)
-            dialog.set_title("Model Silinemez")
             content = dialog.get_content_area()
-            content.append(Gtk.Label(label="En az 1 model kalmalı. Son modeli silemezsin."))
-            dialog.add_button("Tamam", Gtk.ResponseType.OK)
+            label = Gtk.Label()
+            self.bind_i18n(label, "label", "o_Min_Model_Error")
+            content.append(label)
+            dialog.add_button(self("o_OK"), Gtk.ResponseType.OK)
             dialog.connect("response", lambda d, r: d.destroy())
             dialog.present()
             return
 
         dialog = Gtk.Dialog()
         dialog.set_transient_for(self.win)
+        self.bind_i18n(dialog, "title", "o_Delete_Model")
         dialog.set_modal(True)
-        dialog.set_title("Model Sil")
 
         content = dialog.get_content_area()
-        label = Gtk.Label(label=f"Bu modeli silmek istiyor musun?\n\n{model_id}")
+        text = self("o_Delete_Model_Confirm").format(model_id=model_id)
+        label = Gtk.Label(label=text)
         label.set_wrap(True)
         content.append(label)
 
-        dialog.add_button("İptal", Gtk.ResponseType.CANCEL)
-        dialog.add_button("Sil", Gtk.ResponseType.OK)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Delete"), Gtk.ResponseType.OK)
 
         def on_response(d, resp):
             if resp == Gtk.ResponseType.OK:
@@ -1997,18 +2062,18 @@ class ChatApp(Gtk.Application):
     def open_add_model_dialog(self, *_):
         dialog = Gtk.Dialog()
         dialog.set_transient_for(self.win)
+        self.bind_i18n(dialog, "title", "o_Add_Model")
         dialog.set_modal(True)
-        dialog.set_title("Model Ekle")
 
         content = dialog.get_content_area()
 
-        info = Gtk.Label(label="Model ID gir (ör: openai/gpt-4.1-mini)")
+        info = Gtk.Label(label="Model ID:")
         info.set_wrap(True)
         info.set_xalign(0)
         content.append(info)
 
         entry = Gtk.Entry()
-        entry.set_placeholder_text("provider/model (ör: google/gemini-2.5-flash-image)")
+        entry.set_placeholder_text("provider/model (exp: openai/gpt-4.1-mini)")
         content.append(entry)
 
         # Ctrl+V ile yapıştırmayı garanti et
@@ -2043,14 +2108,14 @@ class ChatApp(Gtk.Application):
 
         # Link
         link = Gtk.LinkButton.new_with_label(
-            "https://openrouter.ai/models",
-            "OpenRouter – Models sayfasını aç"
-        )
-        link.set_halign(Gtk.Align.START)
+                "https://openrouter.ai/models",
+                "OpenRouter – Models Page"
+                )
+        link.set_halign(Gtk.Align.CENTER)
         content.append(link)
 
-        dialog.add_button("İptal", Gtk.ResponseType.CANCEL)
-        dialog.add_button("Ekle", Gtk.ResponseType.OK)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Add"), Gtk.ResponseType.OK)
 
         def on_response(d, resp):
             if resp == Gtk.ResponseType.OK:
@@ -2126,12 +2191,13 @@ class ChatApp(Gtk.Application):
         vbox.set_margin_start(10)
         vbox.set_margin_end(10)
 
-        title = Gtk.Label(label="Yeni isim:")
+        title = Gtk.Label()
+        self.bind_i18n(title, "label", "o_New_Name")
         title.set_halign(Gtk.Align.START)
         vbox.append(title)
 
         entry = Gtk.Entry()
-        entry.set_placeholder_text("ör: my_chat")
+        entry.set_placeholder_text("exp: my_chat")
         entry.set_text(file_path.stem)
 
         key_controller = Gtk.EventControllerKey()
@@ -2205,7 +2271,8 @@ class ChatApp(Gtk.Application):
         entry.connect("activate", do_rename)
         vbox.append(entry)
 
-        hint = Gtk.Label(label="(Dosya adı olarak kaydedilir)")
+        hint = Gtk.Label()
+        self.bind_i18n(hint, "label", "o_Rename_Hint")
         hint.set_halign(Gtk.Align.START)
         hint.add_css_class("dim-label")
         vbox.append(hint)
@@ -2328,15 +2395,15 @@ class ChatApp(Gtk.Application):
     def refresh_dynamic_i18n_texts(self):
         try:
             self.models_toggle_btn.set_label(
-                f"{self('o_AI_Models')} ▾" if self.models_list_open else f"{self('o_AI_Models')} ▸"
-            )
+                    f"{self('o_AI_Models')} ▾" if self.models_list_open else f"{self('o_AI_Models')} ▸"
+                    )
         except Exception:
             pass
 
         try:
             self.chats_toggle_btn.set_label(
-                f"{self('o_Chats')} ▾" if self.chats_list_open else f"{self('o_Chats')} ▸"
-            )
+                    f"{self('o_Chats')} ▾" if self.chats_list_open else f"{self('o_Chats')} ▸"
+                    )
         except Exception:
             pass
 
@@ -2431,6 +2498,187 @@ class ChatApp(Gtk.Application):
         except Exception:
             pass
 
+    def open_ai_settings_dialog(self):
+        cfg = self.load_config()
+
+        dialog = Gtk.Dialog(transient_for=self.win)
+        self.bind_i18n(dialog, "title", "o_AI_Settings")
+        dialog.set_modal(True)
+        dialog.set_default_size(520, 380)
+
+
+        content = dialog.get_content_area()
+        content.set_spacing(10)
+        content.set_margin_top(10)
+        content.set_margin_bottom(10)
+        content.set_margin_start(10)
+        content.set_margin_end(10)
+
+        # --- Response Language ---
+        row_response = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        response_label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        response_label_box.set_hexpand(True)
+
+        response_title = Gtk.Label()
+        self.bind_i18n(response_title, "label", "o_Force_Language_Text")
+        response_title.set_xalign(0)
+        response_title.set_halign(Gtk.Align.START)
+
+        response_desc = Gtk.Label()
+        self.bind_i18n(response_desc, "label", "o_Force_Language_Hint")
+        response_desc.set_xalign(0)
+        response_desc.set_halign(Gtk.Align.START)
+        response_desc.set_wrap(True)
+        response_desc.add_css_class("dim-label")
+
+        response_label_box.append(response_title)
+        response_label_box.append(response_desc)
+
+        response_switch = Gtk.Switch()
+        response_switch.set_active(bool(cfg.get("force_ui_language", False)))
+        response_switch.set_halign(Gtk.Align.END)
+        response_switch.set_valign(Gtk.Align.CENTER)
+
+        row_response.append(response_label_box)
+        row_response.append(response_switch)
+        content.append(row_response)
+
+        # --- Online STT ---
+        row_online = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        online_label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        online_label_box.set_hexpand(True)
+
+        online_title = Gtk.Label()
+        self.bind_i18n(online_title, "label", "o_Online_STT_Text")
+        online_title.set_xalign(0)
+        online_title.set_halign(Gtk.Align.START)
+
+        online_desc = Gtk.Label()
+        self.bind_i18n(online_desc, "label", "o_Online_STT_Hint")
+        online_desc.set_xalign(0)
+        online_desc.set_halign(Gtk.Align.START)
+        online_desc.set_wrap(True)
+        online_desc.add_css_class("dim-label")
+
+        online_label_box.append(online_title)
+        online_label_box.append(online_desc)
+
+        online_switch = Gtk.Switch()
+        online_switch.set_active(bool(cfg.get("is_mic_online", True)))
+        online_switch.set_halign(Gtk.Align.END)
+        online_switch.set_valign(Gtk.Align.CENTER)
+
+        row_online.append(online_label_box)
+        row_online.append(online_switch)
+        content.append(row_online)
+
+        # --- Desktop Voice ---
+        row_desktop = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
+        desktop_label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        desktop_label_box.set_hexpand(True)
+
+        desktop_title = Gtk.Label()
+        self.bind_i18n(desktop_title, "label", "o_Use_Desktop_Audio_Text")
+        desktop_title.set_xalign(0)
+        desktop_title.set_halign(Gtk.Align.START)
+
+        desktop_desc = Gtk.Label()
+        self.bind_i18n(desktop_desc, "label", "o_Use_Desktop_Audio_Hint")
+        desktop_desc.set_xalign(0)
+        desktop_desc.set_halign(Gtk.Align.START)
+        desktop_desc.set_wrap(True)
+        desktop_desc.add_css_class("dim-label")
+
+        desktop_label_box.append(desktop_title)
+        desktop_label_box.append(desktop_desc)
+
+        desktop_switch = Gtk.Switch()
+        desktop_switch.set_active(bool(cfg.get("use_desktop_voice", False)))
+        desktop_switch.set_halign(Gtk.Align.END)
+        desktop_switch.set_valign(Gtk.Align.CENTER)
+
+        row_desktop.append(desktop_label_box)
+        row_desktop.append(desktop_switch)
+        content.append(row_desktop)
+
+        # --- Online model ---
+        stt_model_label = Gtk.Label()
+        self.bind_i18n(stt_model_label, "label", "o_Online_STT_Model")
+        stt_model_label.set_xalign(0)
+        content.append(stt_model_label)
+
+        stt_model_entry = Gtk.Entry()
+        stt_model_entry.set_placeholder_text("openai/gpt-audio-mini")
+        stt_model_entry.set_text(str(cfg.get("stt_model_online", "openai/gpt-audio-mini") or ""))
+        content.append(stt_model_entry)
+
+        # --- whisper.cpp binary ---
+        whisper_bin_label = Gtk.Label(label=f"whisper.cpp {self('o_Binary_Path')}")
+        whisper_bin_label.set_xalign(0)
+        content.append(whisper_bin_label)
+
+        whisper_bin_entry = Gtk.Entry()
+        whisper_bin_entry.set_placeholder_text("/usr/bin/whisper-cli")
+        whisper_bin_entry.set_text(str(cfg.get("whisper_cpp_bin", "") or ""))
+        content.append(whisper_bin_entry)
+
+        # --- whisper.cpp model ---
+        whisper_model_label = Gtk.Label(label=f"whisper.cpp {self('o_Model_Path')}")
+        whisper_model_label.set_xalign(0)
+        content.append(whisper_model_label)
+
+        whisper_model_entry = Gtk.Entry()
+        whisper_model_entry.set_placeholder_text("/home/usr/models/ggml-base.bin")
+        whisper_model_entry.set_text(str(cfg.get("whisper_cpp_model", "") or ""))
+        content.append(whisper_model_entry)
+
+        # Link
+        link = Gtk.LinkButton.new_with_label(
+                "https://openrouter.ai/models?fmt=cards&input_modalities=audio",
+                "OpenRouter – STT Models Page"
+                )
+        link.set_halign(Gtk.Align.CENTER)
+        content.append(link)
+
+
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
+
+
+
+        def refresh_sensitive_state(*_):
+            is_online = bool(online_switch.get_active())
+
+            stt_model_label.set_sensitive(is_online)
+            stt_model_entry.set_sensitive(is_online)
+
+            whisper_bin_label.set_sensitive(not is_online)
+            whisper_bin_entry.set_sensitive(not is_online)
+            whisper_model_label.set_sensitive(not is_online)
+            whisper_model_entry.set_sensitive(not is_online)
+
+        online_switch.connect("notify::active", refresh_sensitive_state)
+        refresh_sensitive_state()
+
+        def on_response(d, resp):
+            if resp == Gtk.ResponseType.OK:
+                cfg2 = self.load_config()
+                cfg2["force_ui_language"] = bool(response_switch.get_active())
+                cfg2["is_mic_online"] = bool(online_switch.get_active())
+                cfg2["use_desktop_voice"] = bool(desktop_switch.get_active())
+                cfg2["stt_model_online"] = stt_model_entry.get_text().strip()
+                cfg2["whisper_cpp_bin"] = whisper_bin_entry.get_text().strip()
+                cfg2["whisper_cpp_model"] = whisper_model_entry.get_text().strip()
+                self.save_config(cfg2)
+
+            d.close()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
     def open_language_dialog(self):
         dialog = Gtk.Dialog(transient_for=self.win)
         self.bind_i18n(dialog, "title", "o_Language")
@@ -2457,13 +2705,9 @@ class ChatApp(Gtk.Application):
         combo.set_active_id(current_lang)
         content.append(combo)
 
-        cancel_btn = Gtk.Button()
-        self.bind_i18n(cancel_btn, "label", "o_Cancel")
-        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
 
-        save_btn = Gtk.Button()
-        self.bind_i18n(save_btn, "label", "o_Save")
-        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
 
         def on_response(d, resp):
             if resp == Gtk.ResponseType.OK:
@@ -2507,6 +2751,10 @@ class ChatApp(Gtk.Application):
             cfg["chat_bg_image"] = ""
             changed = True
 
+        if "show_usage" not in cfg:
+            cfg["show_usage"] = True
+            changed = True
+
         if changed:
             self.save_config(cfg)
 
@@ -2520,17 +2768,17 @@ class ChatApp(Gtk.Application):
             pass
 
         for w in [
-            getattr(self, "win", None),
-            getattr(self, "sidebar", None),
-            getattr(self, "scroll", None),
-            getattr(self, "content_box", None),
-            getattr(self, "chat_box", None),
-            getattr(self, "textview", None),
-            getattr(self, "text_scroll", None),
-            getattr(self, "preview_row", None),
-            getattr(self, "preview_hbox", None),
-            getattr(self, "selection_row", None),
-        ]:
+                getattr(self, "win", None),
+                getattr(self, "sidebar", None),
+                getattr(self, "scroll", None),
+                getattr(self, "content_box", None),
+                getattr(self, "chat_box", None),
+                getattr(self, "textview", None),
+                getattr(self, "text_scroll", None),
+                getattr(self, "preview_row", None),
+                getattr(self, "preview_hbox", None),
+                getattr(self, "selection_row", None),
+                ]:
             if w is not None:
                 try:
                     w.queue_draw()
@@ -2572,10 +2820,10 @@ class ChatApp(Gtk.Application):
                     bg_path_entry.set_text(path)
 
             self.open_single_file_dialog_portable(
-                title=self("o_Select_Image"),
-                image_only=True,
-                callback=on_path_selected
-            )
+                    title=self("o_Select_Image"),
+                    image_only=True,
+                    callback=on_path_selected
+                    )
 
         def on_clear_bg(*_):
             bg_path_entry.set_text("")
@@ -2597,6 +2845,14 @@ class ChatApp(Gtk.Application):
 
             rows[key] = entry
 
+        hint = Gtk.Label()
+        hint.set_label(self("o_Color_Edit_Hint").format(mode_name=mode_name))
+        hint.set_xalign(0)
+        hint.set_wrap(True)
+        hint.add_css_class("dim-label")
+        content.append(hint)
+
+
         add_row(self("o_Window_BG"), "window_bg")
         add_row(self("o_Input_BG"), "input_bg")
         add_row(self("o_User_BG"), "user_bg")
@@ -2605,17 +2861,31 @@ class ChatApp(Gtk.Application):
         add_row(self("o_Bot_Text"), "bot_text")
         add_row(self("o_Sidebar_Text"), "sidebar_text")
 
-        hint = Gtk.Label(
-            label=(
-                f"{self('o_Color_Edit_Hint')}"
-            )
-        )
-        hint.set_xalign(0)
-        hint.set_wrap(True)
-        hint.add_css_class("dim-label")
-        content.append(hint)
+        # --- SHOW USAGE SWITCH ---
+        row_usage = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
-        bg_path_label = Gtk.Label(label=f"{self('o_Background_Hint')}")
+        usage_label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        usage_label_box.set_hexpand(True)
+
+        usage_title = Gtk.Label()
+        self.bind_i18n(usage_title, "label", "o_Token_Usage")
+        usage_title.set_xalign(0)
+        usage_title.set_halign(Gtk.Align.START)
+
+        usage_label_box.append(usage_title)
+
+        usage_switch = Gtk.Switch()
+        usage_switch.set_active(bool(cfg.get("show_usage", True)))
+        usage_switch.set_halign(Gtk.Align.END)
+        usage_switch.set_valign(Gtk.Align.CENTER)
+
+        row_usage.append(usage_label_box)
+        row_usage.append(usage_switch)
+
+        content.append(row_usage)
+
+        bg_path_label = Gtk.Label()
+        self.bind_i18n(bg_path_label, "label", "o_Background_Hint")
         bg_path_label.set_xalign(0)
         content.append(bg_path_label)
 
@@ -2640,13 +2910,9 @@ class ChatApp(Gtk.Application):
         reset_btn = Gtk.Button(label=f"{self('o_Reset_Default')}")
         content.append(reset_btn)
 
-        cancel_btn = Gtk.Button()
-        self.bind_i18n(cancel_btn, "label", "o_Cancel")
-        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
 
-        save_btn = Gtk.Button()
-        self.bind_i18n(save_btn, "label", "o_Save")
-        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
 
         def valid_hex(s: str) -> bool:
             s = (s or "").strip()
@@ -2668,6 +2934,10 @@ class ChatApp(Gtk.Application):
 
         def on_response(d, resp):
             if resp == Gtk.ResponseType.OK:
+                cfg2 = self.load_config()
+                cfg2["show_usage"] = bool(usage_switch.get_active())
+                self.save_config(cfg2)
+
                 new_colors = {}
                 for key, entry in rows.items():
                     val = entry.get_text().strip()
@@ -2695,12 +2965,16 @@ class ChatApp(Gtk.Application):
     def open_style_dialog(self):
         dialog = Gtk.Dialog(transient_for=self.win)
         self.bind_i18n(dialog, "title", "o_Response_Style")
-
-        dialog = Gtk.Dialog(title="Cevap Tarzı", transient_for=self.win)
         dialog.set_modal(True)
 
         content = dialog.get_content_area()
         content.set_spacing(8)
+
+        label = Gtk.Label()
+        self.bind_i18n(label, "label", "o_Response_Style")
+        label.set_xalign(0)
+        content.append(label)
+
 
         entry = Gtk.Entry()
         self.bind_i18n(entry, "placeholder", "o_Response_Style_Placeholder")
@@ -2710,13 +2984,9 @@ class ChatApp(Gtk.Application):
 
         content.append(entry)
 
-        cancel_btn = Gtk.Button()
-        self.bind_i18n(cancel_btn, "label", "o_Cancel")
-        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
 
-        save_btn = Gtk.Button()
-        self.bind_i18n(save_btn, "label", "o_Save")
-        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
 
         # Enter → Kaydet
         entry.connect("activate", lambda *_: dialog.response(Gtk.ResponseType.OK))
@@ -2824,6 +3094,12 @@ class ChatApp(Gtk.Application):
 
         content = dialog.get_content_area()
 
+        label = Gtk.Label()
+        self.bind_i18n(label, "label", "o_OpenRouter_API_Key")
+        label.set_xalign(0)
+        content.append(label)
+
+
         entry = Gtk.Entry()
         self.bind_i18n(entry, "placeholder", "o_OpenRouter_Placeholder")
         entry.set_visibility(False)
@@ -2831,14 +3107,8 @@ class ChatApp(Gtk.Application):
         # Ctrl+V ile yapıştırmayı garanti et
         key_controller = Gtk.EventControllerKey()
 
-
-        cancel_btn = Gtk.Button()
-        self.bind_i18n(cancel_btn, "label", "o_Cancel")
-        dialog.add_action_widget(cancel_btn, Gtk.ResponseType.CANCEL)
-
-        save_btn = Gtk.Button()
-        self.bind_i18n(save_btn, "label", "o_Save")
-        dialog.add_action_widget(save_btn, Gtk.ResponseType.OK)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
 
 
         def on_response(dialog, response):
@@ -2893,22 +3163,26 @@ class ChatApp(Gtk.Application):
         box.set_margin_start(8)
         box.set_margin_end(8)
 
-        api_btn = Gtk.Button(label=f"🔑 {self('o_OpenRouter_API_Key')}")
+        api_btn = Gtk.Button(label=self('o_OpenRouter_API_Key'))
         api_btn.set_halign(Gtk.Align.FILL)
         api_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_key_dialog(None)))
         box.append(api_btn)
 
-        style_btn = Gtk.Button(label=f"🧠 {self('o_Response_Style')}")
+        style_btn = Gtk.Button(label=self('o_Response_Style'))
         style_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_style_dialog()))
         box.append(style_btn)
 
-        personalization_btn = Gtk.Button(label=f"🎨 {self('o_Personalization')}")
+        personalization_btn = Gtk.Button(label=self('o_Personalization'))
         personalization_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_personalization_dialog()))
         box.append(personalization_btn)
 
-        lang_btn = Gtk.Button(label=f"{self('o_Language')}")
+        lang_btn = Gtk.Button(label=self('o_Language'))
         lang_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_language_dialog()))
         box.append(lang_btn)
+
+        ai_settings_btn = Gtk.Button(label=self('o_AI_Settings'))
+        ai_settings_btn.connect("clicked", lambda *_: (pop.popdown(), self.open_ai_settings_dialog()))
+        box.append(ai_settings_btn)
 
         pop.set_child(box)
         pop.popup()
@@ -2991,9 +3265,9 @@ class ChatApp(Gtk.Application):
             rename_item = Gtk.Button(label=f"{self('o_Rename')}")
             rename_item.set_halign(Gtk.Align.FILL)
             rename_item.connect(
-                "clicked",
-                lambda *_, f=file, p=popover, anchor=more_btn: self.open_rename_popover(anchor, f, p)
-            )
+                    "clicked",
+                    lambda *_, f=file, p=popover, anchor=more_btn: self.open_rename_popover(anchor, f, p)
+                    )
             pop_box.append(rename_item)
 
             # Delete
@@ -3016,16 +3290,18 @@ class ChatApp(Gtk.Application):
     def delete_chat(self, button, file_path):
         dialog = Gtk.Dialog()
         dialog.set_transient_for(self.win)
+        self.bind_i18n(dialog, "title", "o_Delete_Chat")
         dialog.set_modal(True)
-        dialog.set_title("Chat Sil")
 
         content = dialog.get_content_area()
-        label = Gtk.Label(label="Bu chat silinsin mi?\nBu işlem geri alınamaz.")
+        label = Gtk.Label()
+        self.bind_i18n(label, "label", "o_Delete_Chat_Confirm")
         label.set_wrap(True)
         content.append(label)
 
-        dialog.add_button("İptal", Gtk.ResponseType.CANCEL)
-        dialog.add_button("Sil", Gtk.ResponseType.OK)
+        dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
+        dialog.add_button(self("o_Delete"), Gtk.ResponseType.OK)
+
 
         def on_response(dialog, response):
             if response == Gtk.ResponseType.OK:
@@ -3114,14 +3390,14 @@ class ChatApp(Gtk.Application):
 
     def build_regen_prompt_for_bot(self, question: str, answer: str) -> str:
         return (
-            "Aşağıdaki soru ve verilen cevaba benzer bir sonuç üret.\n"
-            "Aynı yaklaşımı ve içeriği koru, ama metni birebir kopyalama; yeniden yaz "
-            "ve mümkünse küçük iyileştirmeler yap.\n\n"
-            "[SORU]\n"
-            f"{question.strip()}\n\n"
-            "[ÖNCEKİ CEVAP]\n"
-            f"{answer.strip()}\n"
-        )
+                "Aşağıdaki soru ve verilen cevaba benzer bir sonuç üret.\n"
+                "Aynı yaklaşımı ve içeriği koru, ama metni birebir kopyalama; yeniden yaz "
+                "ve mümkünse küçük iyileştirmeler yap.\n\n"
+                "[SORU]\n"
+                f"{question.strip()}\n\n"
+                "[ÖNCEKİ CEVAP]\n"
+                f"{answer.strip()}\n"
+                )
 
     def copy_message_by_index(self, idx: int):
         try:
@@ -3141,7 +3417,7 @@ class ChatApp(Gtk.Application):
         self.copy_to_clipboard(inner if inner is not None else content)
 
     def regenerate_by_index(self, idx: int):
-            # 1) Chat'i oku
+        # 1) Chat'i oku
         try:
             with open(self.current_chat, "r", encoding="utf-8") as f:
                 messages = json.load(f) or []
@@ -3181,9 +3457,9 @@ class ChatApp(Gtk.Application):
             else:
                 # user bulunamadıysa sadece cevaba benzer üret
                 regen_text = (
-                    "Aşağıdaki cevaba benzer bir sonuç üret. Metni birebir kopyalama; yeniden yaz ve iyileştir.\n\n"
-                    f"[ÖNCEKİ CEVAP]\n{answer}\n"
-                )
+                        "Aşağıdaki cevaba benzer bir sonuç üret. Metni birebir kopyalama; yeniden yaz ve iyileştir.\n\n"
+                        f"[ÖNCEKİ CEVAP]\n{answer}\n"
+                        )
 
         if not regen_text:
             return
@@ -3212,11 +3488,11 @@ class ChatApp(Gtk.Application):
 
         # 4) Chat sonuna yeni user mesajı ekle (regen flag + referans meta + preview)
         new_user = {
-            "role": "user",
-            "content": regen_text,
-            "regen": True,  # regenerate rengi/işareti
-            "used_refs": sorted(ref_set),  # AI'ya giden referans setiyle uyumlu meta
-        }
+                "role": "user",
+                "content": regen_text,
+                "regen": True,  # regenerate rengi/işareti
+                "used_refs": sorted(ref_set),  # AI'ya giden referans setiyle uyumlu meta
+                }
 
         # UI'da karışmaması için: seçilen balon + (bot ise bağlı user) ayrı gruplar
         groups = []
@@ -3497,7 +3773,7 @@ class ChatApp(Gtk.Application):
                     apply_summary = self.build_apply_summary(apply_ops)
 
                 if copy_block is not None:
-                     # 🔹 Tek renk kod bloğu container (Title + Kopyala + Kod aynı alan)
+                    # 🔹 Tek renk kod bloğu container (Title + Kopyala + Kod aynı alan)
                     code_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
                     code_container.add_css_class("code-block")
 
@@ -3615,24 +3891,6 @@ class ChatApp(Gtk.Application):
 
                 bubble.append(files_box)
 
-            u = msg.get("usage")
-            if show_usage and isinstance(u, dict):
-                p = int(u.get("prompt_tokens", 0) or 0)
-                c = int(u.get("completion_tokens", 0) or 0)
-                t = int(u.get("total_tokens", 0) or 0)
-
-                usage_txt = (
-                    f"{self('o_Input_Tokens')}: {p} | "
-                    f"{self('o_Output_Tokens')}: {c} | "
-                    f"{self('o_Total_Tokens')}: {t}"
-                )
-
-                usage_label = Gtk.Label(label=usage_txt)
-                usage_label.set_xalign(0)
-                usage_label.set_wrap(True)
-                usage_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
-                usage_label.add_css_class("refs-preview-line")
-                bubble.append(usage_label)
 
             if msg.get("role") == "user":
                 bubble.add_css_class("user-bubble")
@@ -3702,6 +3960,8 @@ class ChatApp(Gtk.Application):
                     content_text = msg.get("content") or ""
                     apply_block = self.extract_apply_block(content_text)
 
+                    usage_parent = bubble
+
                     if apply_block:
                         ops, parse_err = self.parse_apply_ops(apply_block)
 
@@ -3720,6 +3980,27 @@ class ChatApp(Gtk.Application):
                                 valid_ops = ops
 
                         if valid_ops:
+                            apply_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+                            apply_area.set_halign(Gtk.Align.START)
+
+                            paths = []
+                            for op in valid_ops:
+                                p = str((op or {}).get("path") or "").strip()
+                                if p:
+                                    pp = Path(p)
+                                    short = f"{pp.parent.name}/{pp.name}" if pp.parent.name else pp.name
+                                    if short not in paths:
+                                        paths.append(short)
+
+                            if paths:
+                                path_label = Gtk.Label(label="\n".join(paths))
+                                path_label.set_xalign(0)
+                                path_label.set_halign(Gtk.Align.START)
+                                path_label.set_wrap(True)
+                                path_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                                path_label.add_css_class("refs-preview-line")
+                                apply_area.append(path_label)
+
                             btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
                             btn_row.set_halign(Gtk.Align.START)
 
@@ -3732,7 +4013,6 @@ class ChatApp(Gtk.Application):
                             self._consume_click(reject_btn)
 
                             def _on_apply(_b, _ops=valid_ops, _idx=i):
-                                # çift tıklama vs engelle
                                 apply_btn.set_sensitive(False)
                                 reject_btn.set_sensitive(False)
 
@@ -3744,14 +4024,11 @@ class ChatApp(Gtk.Application):
                                     self._set_apply_status(_idx, "fail", err)
                                     GLib.idle_add(self.apply_failed_to_input, err)
 
-                                # UI yenile
                                 self.load_chat()
                                 self.scroll_to_bottom(force=True)
 
                             def _on_reject(_b, _idx=i):
-                                # İstersen "iptal edildi" de gösterebilirsin:
                                 self._set_apply_status(_idx, "cancel")
-                                # self._set_apply_status(_idx, False, "rejected")
                                 self.load_chat()
                                 self.scroll_to_bottom(force=True)
 
@@ -3760,11 +4037,34 @@ class ChatApp(Gtk.Application):
 
                             btn_row.append(apply_btn)
                             btn_row.append(reject_btn)
+                            apply_area.append(btn_row)
 
-                            bubble.append(btn_row)
+                            bubble.append(apply_area)
+                            usage_parent = apply_area
 
                         # parse_err varsa bile input'a basma; sadece buton göstermemek daha doğru
                         # (çünkü her bot mesajında parse_err input’u kirletir)
+
+                    # BURASI if apply_block'UN DIŞINDA OLMALI
+                    u = msg.get("usage")
+                    if show_usage and isinstance(u, dict):
+                        p = int(u.get("prompt_tokens", 0) or 0)
+                        c = int(u.get("completion_tokens", 0) or 0)
+                        t = int(u.get("total_tokens", 0) or 0)
+
+                        usage_txt = (
+                            f"{self('o_Input_Tokens')}: {p} | "
+                            f"{self('o_Output_Tokens')}: {c} | "
+                            f"{self('o_Total_Tokens')}: {t}"
+                        )
+
+                        usage_label = Gtk.Label(label=usage_txt)
+                        usage_label.set_xalign(0)
+                        usage_label.set_halign(Gtk.Align.START)
+                        usage_label.set_wrap(True)
+                        usage_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                        usage_label.add_css_class("refs-preview-line")
+                        usage_parent.append(usage_label)
 
             # Tek seçili balonda action butonları (copy + regenerate)
             show_actions = (len(self.selected_indexes) == 1 and i in self.selected_indexes)
@@ -3866,7 +4166,7 @@ class ChatApp(Gtk.Application):
         try:
             h = self.preview_row.get_allocated_height() if self.preview_row.get_visible() else 0
             # input + padding için kaba bir ek
-            self.scroll_btn.set_margin_bottom(80 + h)
+            self.scroll_btn.set_margin_bottom(120 + h)
         except Exception:
             pass
         return False
@@ -3887,8 +4187,8 @@ class ChatApp(Gtk.Application):
     def on_scroll_changed(self, adjustment):
         # en altta mı kontrol et
         at_bottom = adjustment.get_value() >= (
-            adjustment.get_upper() - adjustment.get_page_size() - 800
-        )
+                adjustment.get_upper() - adjustment.get_page_size() - 800
+                )
 
         if at_bottom:
             self.scroll_btn.set_visible(False)
@@ -3896,6 +4196,208 @@ class ChatApp(Gtk.Application):
             self.scroll_btn.set_visible(True)
 
     # ---------------- VOICE INPUT -------------------
+
+    def _detect_pw_desktop_target(self) -> str | None:
+        """
+        PipeWire/Pulse tarafında masaüstü sesini almak için
+        monitor source bulmaya çalışır.
+        """
+        preferred = self._get_preferred_mic_from_config()
+        if preferred:
+            return preferred
+
+        pactl = shutil.which("pactl")
+        if pactl:
+            try:
+                p = subprocess.run(
+                        [pactl, "list", "short", "sources"],
+                        capture_output=True,
+                        text=True
+                        )
+                if p.returncode == 0:
+                    lines = (p.stdout or "").splitlines()
+
+                    # Önce monitor source ara
+                    for line in lines:
+                        parts = line.split("\t")
+                        if len(parts) < 2:
+                            continue
+                        source_name = parts[1].strip()
+                        if source_name and self._is_monitor_like_name(source_name):
+                            return source_name
+
+                    # hiç bulunamazsa None dön
+                    return None
+            except Exception:
+                pass
+
+        return None
+
+
+
+
+    def ensure_audio_input_config(self):
+        cfg = self.load_config()
+        changed = False
+
+        if "force_ui_language" not in cfg:
+            cfg["force_ui_language"] = False
+            changed = True
+
+        if "is_mic_online" not in cfg:
+            cfg["is_mic_online"] = True
+            changed = True
+
+        if "use_desktop_voice" not in cfg:
+            cfg["use_desktop_voice"] = False
+            changed = True
+
+        if "stt_model_online" not in cfg:
+            cfg["stt_model_online"] = "openai/gpt-audio-mini"
+            changed = True
+
+        if "whisper_cpp_bin" not in cfg:
+            cfg["whisper_cpp_bin"] = "/home/$USER/whisper.cpp/build/bin/whisper-cli"
+            changed = True
+
+        if "whisper_cpp_model" not in cfg:
+            cfg["whisper_cpp_model"] = "/home/$USER/.local/share/whisper/ggml-tiny.bin"
+            changed = True
+
+
+        if changed:
+            self.save_config(cfg)
+
+    def _get_use_desktop_voice(self) -> bool:
+        cfg = self.load_config()
+        return bool(cfg.get("use_desktop_voice", False))
+
+    def _is_monitor_like_name(self, name: str) -> bool:
+        s = str(name or "").strip().lower()
+        bad_words = [
+                "monitor",
+                ".monitor",
+                "loopback",
+                "stereo mix",
+                "what u hear",
+                "mix monitor",
+                "output"
+                ]
+        return any(w in s for w in bad_words)
+
+    def _get_preferred_mic_from_config(self) -> str:
+        cfg = self.load_config()
+        return str(cfg.get("mic_device") or "").strip()
+
+    def _detect_pw_mic_target(self) -> str | None:
+        """
+        PipeWire/Pulse tarafında gerçek mikrofonu bulmaya çalışır.
+        Monitor/loopback kaynaklarını elemeye çalışır.
+        """
+        preferred = self._get_preferred_mic_from_config()
+        if preferred:
+            return preferred
+
+        pactl = shutil.which("pactl")
+        if pactl:
+            try:
+                p = subprocess.run(
+                        [pactl, "list", "short", "sources"],
+                        capture_output=True,
+                        text=True
+                        )
+                if p.returncode == 0:
+                    lines = (p.stdout or "").splitlines()
+
+                    # Önce gerçek mikrofon ara
+                    for line in lines:
+                        parts = line.split("\t")
+                        if len(parts) < 2:
+                            continue
+                        source_name = parts[1].strip()
+                        if source_name and not self._is_monitor_like_name(source_name):
+                            return source_name
+
+                    # fallback olarak ilk source
+                    for line in lines:
+                        parts = line.split("\t")
+                        if len(parts) < 2:
+                            continue
+                        source_name = parts[1].strip()
+                        if source_name:
+                            return source_name
+            except Exception:
+                pass
+
+        wpctl = shutil.which("wpctl")
+        if wpctl:
+            try:
+                p = subprocess.run(
+                        [wpctl, "status"],
+                        capture_output=True,
+                        text=True
+                        )
+                if p.returncode == 0:
+                    for line in (p.stdout or "").splitlines():
+                        low = line.lower()
+                        if "*" in line and "source" in low and "monitor" not in low:
+                            parts = line.strip().split()
+                            for token in parts:
+                                token = token.strip(".")
+                                if token.isdigit():
+                                    return token
+            except Exception:
+                pass
+
+        return None
+
+    def _detect_arecord_mic_device(self) -> str | None:
+        """
+        arecord için hw/plughw cihazı bulmaya çalışır.
+        En güvenlisi config'ten gelmesi ama fallback de ekliyoruz.
+        """
+        preferred = self._get_preferred_mic_from_config()
+        if preferred:
+            return preferred
+
+        ar = shutil.which("arecord")
+        if not ar:
+            return None
+
+        try:
+            p = subprocess.run(
+                    [ar, "-L"],
+                    capture_output=True,
+                    text=True
+                    )
+            if p.returncode != 0:
+                return None
+
+            lines = [x.strip() for x in (p.stdout or "").splitlines() if x.strip()]
+
+            # pulse varsa önce onu kullanma; çünkü bazen monitor'a gidebilir
+            # gerçek cihaz olan plughw/hw benzeri bir giriş daha güvenli
+            for name in lines:
+                low = name.lower()
+                if low.startswith("plughw:") and "null" not in low:
+                    return name
+
+            for name in lines:
+                low = name.lower()
+                if low.startswith("hw:") and "null" not in low:
+                    return name
+
+            for name in lines:
+                low = name.lower()
+                if low == "default":
+                    return name
+
+        except Exception:
+            pass
+
+        return None
+
+
 
     def toggle_voice_input(self, *_):
         # Eğer kayıt açıksa: durdur + transcribe
@@ -3933,21 +4435,47 @@ class ChatApp(Gtk.Application):
 
         pw = shutil.which("pw-record")
         ar = shutil.which("arecord")
+        use_desktop_voice = self._get_use_desktop_voice()
 
         if pw:
-            cmd = [pw, "--rate", "16000", "--channels", "1", str(self._last_wav)]
+            if use_desktop_voice:
+                target = self._detect_pw_desktop_target()
+                if not target:
+                    self.handle_ai_error("Masaüstü sesi için monitor source bulunamadı.")
+                    return
+            else:
+                target = self._detect_pw_mic_target()
+                if not target:
+                    self.handle_ai_error("Mikrofon kaynağı bulunamadı.")
+                    return
+
+            cmd = [pw, "--rate", "16000", "--channels", "1", "--target", str(target), str(self._last_wav)]
+
         elif ar:
-            cmd = [ar, "-f", "S16_LE", "-r", "16000", "-c", "1", str(self._last_wav)]
+            # arecord tarafında masaüstü sesi yakalama her sistemde stabil değil.
+            # Burada mikrofon için normal davranıyoruz.
+            # Desktop sesi gerekiyorsa PipeWire/pw-record tercih edilmeli.
+            if use_desktop_voice:
+                self.handle_ai_error("Masaüstü sesi kaydı için pw-record gerekli.")
+                return
+
+            device = self._detect_arecord_mic_device()
+            if not device:
+                self.handle_ai_error("Mikrofon cihazı bulunamadı.")
+                return
+
+            cmd = [ar, "-D", str(device), "-f", "S16_LE", "-r", "16000", "-c", "1", str(self._last_wav)]
+
         else:
             self.handle_ai_error("pw-record veya arecord bulunamadı.")
             return
 
         try:
             self._voice_proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                    )
         except Exception as e:
             self._voice_proc = None
             self.handle_ai_error(f"Ses kaydı başlatılamadı: {e}")
@@ -3955,6 +4483,94 @@ class ChatApp(Gtk.Application):
 
         self.mic_btn.set_label("⏹")
         self.mic_btn.set_tooltip_text("Kaydı durdur")
+
+    def _normalize_stt_text(self, text: str) -> str:
+        t = (text or "").strip()
+
+        if not t:
+            return "__NO_SPEECH__"
+
+        # Karşılaştırma için normalize et
+        normalized = (
+                t.replace("’", "'")
+                .replace("“", '"')
+                .replace("”", '"')
+                .strip()
+                )
+
+        low = normalized.lower()
+
+        # Direkt EMPTY_AUDIO veya içinde geçiyorsa
+        if "empty_audio" in low:
+            return "__NO_SPEECH__"
+
+        # Gürültü / sessizlik / bekleme mesajları
+        bad_patterns = [
+                "i', sorry",
+                "i'm here",
+                "i am here",
+                "please upload",
+                "please provide",
+                "provide the audio",
+                "share the audio",
+                "i can transcribe",
+                "i will transcribe",
+                "i'll transcribe",
+                "upload the audio",
+                "audio file",
+                "please provide the audio",
+                "no audio",
+                "cannot transcribe",
+                "can't transcribe",
+                "no speech",
+                "no clear speech",
+                "there's no clear speech detected",
+                "there is no clear speech detected",
+                "silence",
+                "only silence",
+                "noise",
+                "only noise",
+                "background sounds",
+                "music only",
+                "please speak when you're ready",
+                "please speak when you are ready",
+                "i'll transcribe your speech",
+                "i will transcribe your speech",
+                "ready, and i'll transcribe",
+                "ready, and i will transcribe",
+                "microphone input",
+                "sure. please speak",
+                "speak when you're ready",
+                "speak when you are ready",
+                "could you please repeat",
+                "repeat the part of the sentence",
+                "so that i can transcribe it accurately",
+                "something might be unclear or incomplete",
+                "it seems like something might be unclear or incomplete",
+                ]
+
+        if any(p in low for p in bad_patterns):
+            return "__NO_SPEECH__"
+
+
+        if (
+            len(t.split()) > 12 and
+            t.count(",") + t.count(".") > 1
+        ):
+            return "__NO_SPEECH__"
+
+
+        # Çok kısa ve anlamsız bazı kalıplar
+        junk_exact = {
+                "empty audio",
+                "empty_audio",
+                "no speech detected",
+                "no clear speech detected",
+                }
+        if low in junk_exact:
+            return "__NO_SPEECH__"
+
+        return t
 
     def _append_to_input(self, text: str):
         buf = self.textview.get_buffer()
@@ -3983,6 +4599,10 @@ class ChatApp(Gtk.Application):
         print("STT MODE:", "online" if is_online else "offline")
         print("STT RAW TEXT:", repr(text))
 
+        if text == "__NO_SPEECH__":
+            GLib.idle_add(self.handle_ai_error, "Ses algılanamadı.")
+            return
+
         if text:
             GLib.idle_add(self._append_to_input, text.strip())
 
@@ -4004,7 +4624,10 @@ class ChatApp(Gtk.Application):
                     "role": "user",
                     "content": [
                         {"type": "text", "text":
-                         "Return ONLY the raw transcription text. No explanations. No prefixes. No extra words."
+                         "Speech-to-text only. "
+                         "Return only verbatim transcription. "
+                         "No replies, no explanations, no apologies, no labels. "
+                         "If speech is unclear or missing, return exactly EMPTY_AUDIO."
                         },
                         {"type": "input_audio", "input_audio": {"data": audio_b64, "format": "wav"}},
                     ],
@@ -4029,7 +4652,8 @@ class ChatApp(Gtk.Application):
             raise RuntimeError(r.text[:500])
 
         data = r.json()
-        return (data["choices"][0]["message"]["content"] or "").strip()
+        raw_text = (data["choices"][0]["message"]["content"] or "").strip()
+        return self._normalize_stt_text(raw_text)
 
     def _stt_offline_whisper_cpp(self, wav_path: Path, cfg: dict) -> str:
         import tempfile
@@ -4063,8 +4687,10 @@ class ChatApp(Gtk.Application):
         if not txt.exists():
             # bazı sürümlerde .txt yerine stdout'a basabilir—fallback
             s = (p.stdout or "").strip()
-            return s
-        return txt.read_text(encoding="utf-8", errors="ignore").strip()
+            return self._normalize_stt_text(s)
+
+        raw_text = txt.read_text(encoding="utf-8", errors="ignore").strip()
+        return self._normalize_stt_text(raw_text)
 
     # ---------------- CHANGE CODE FILES -------------
 

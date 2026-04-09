@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr  /bin/env python3
 import os
 import sys
 import json
@@ -91,6 +91,15 @@ GLOBAL_SYSTEM_PROMPT = (
     "- Özet dışında ekstra açıklama yazma.\n"
     "- Buraya kadar olan mesajlar talimat setidir, cevap verme. Sadece en son kullanıcı mesajını yanıtla."
 )
+
+def load_config():
+    try:
+        if CONFIG_PATH.exists():
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                return json.load(f) or {}
+    except Exception as e:
+        print("config read error:", e)
+    return {}
 
 def _safe_read_text(path: Path, max_bytes: int = 250_000) -> str:
     try:
@@ -317,6 +326,26 @@ def _message_to_plain_text(content) -> str:
         return "\n".join(parts).strip()
 
     return ""
+
+def lang_code_to_name(code: str) -> str:
+    m = {
+        "tr": "Turkish",
+        "en": "English",
+        "de": "German",
+        "fr": "French",
+        "es": "Spanish",
+    }
+    return m.get(code, code)
+
+def get_ui_language():
+    try:
+        if CONFIG_PATH.exists():
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = json.load(f) or {}
+                return str(cfg.get("ui_language", "en")).strip().lower()
+    except:
+        pass
+    return "en"
 
 
 def _extract_images_from_message(msg: dict) -> dict:
@@ -557,10 +586,26 @@ def main():
     final_messages = []
     editable_map = {}  # path(str) -> bool
 
+    system_prompt = f"{GLOBAL_SYSTEM_PROMPT}"
+     
+
     final_messages.append({
         "role": "system",
-        "content": GLOBAL_SYSTEM_PROMPT
+        "content": system_prompt
     })
+
+    cfg = load_config()
+    force_lang = bool(cfg.get("force_ui_language", False))
+
+    lang = get_ui_language()
+    lang_name = lang_code_to_name(lang)
+
+    if force_lang:
+        final_messages.append({
+            "role": "system",
+            "content": f"Kullanıcı şu dilde cevap vermeni tercih ediyor: {lang_name}"
+            })
+
 
     if response_style:
         final_messages.append({
