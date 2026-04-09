@@ -431,12 +431,12 @@ class ChatCLI:
         if current_name in pinned:
             cfg["pinned_chats"] = [x for x in pinned if x != current_name]
             self.save_config(cfg)
-            print(f"\n✔ {self('o_Unpin')}: {self.current_chat.stem}")
+            print(f"\n✔ {self('o_Unpin_Current_Chat')}: {self.current_chat.stem}")
         else:
             pinned.append(current_name)
             cfg["pinned_chats"] = pinned
             self.save_config(cfg)
-            print(f"\n✔ {self('o_Pin')}: {self.current_chat.stem}")
+            print(f"\n✔ {self('o_Pin_Current_Chat')}: {self.current_chat.stem}")
 
     def select_chat(self):
         chats = self.list_chat_files()
