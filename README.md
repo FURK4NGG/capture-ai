@@ -233,7 +233,7 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] Change UI colors
 - [x] Language support [Turkish, English]
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
-- [x] Control with terminal
+- [x] Control via Terminal (excluding STT and some UI features)
 - [ ] Compatible with macOS, Windows
 - [ ] Run local text model
 
