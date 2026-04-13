@@ -240,8 +240,8 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] Language support [Turkish, English]
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
 - [x] Control via Terminal (excluding STT and some UI features)
+- [x] Run local text model
 - [ ] Compatible with macOS, Windows
-- [ ] Run local text model
 
  
 ## 🔎 ALL APP FEATURES
