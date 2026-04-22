@@ -11,7 +11,9 @@
    ~/capture-ai/ui.py  
    ~/capture-ai/ai.py  
    ~/capture-ai/cli.py  
-   ~/capture-ai/capture-ai.sh  
+   ~/capture-ai/capture-ai.sh
+   ~/capture-ai/language/en.json
+   ~/capture-ai/language/tr.json  
    ~/.config/capture-ai/config.json  
    ~/.config/capture-ai/requirements.txt  
    ~/.config/scripts/screenprint.sh  
