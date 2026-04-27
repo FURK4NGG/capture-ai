@@ -242,7 +242,7 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] Language support [Turkish, English]
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
 - [x] Control via Terminal (excluding STT and some UI features)
-- [x] Conversational RAG system(last N messages + summary memory + embedding-based retrieval + code context)
+- [x] Conversational RAG system(short-term memory + summary memory + embedding-based retrieval + code-aware context)
 - [x] Run local text model(Local API-based AI)
 - [ ] Compatible with macOS, Windows
 
