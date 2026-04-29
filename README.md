@@ -240,6 +240,7 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] AI can access and change your documents within permission
 - [x] Change UI colors
 - [x] Language support [Turkish, English]
+- [x] Caching the language file to avoid repeated file reads
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
 - [x] Control via Terminal (excluding STT and some UI features)
 - [x] Conversational RAG system(short-term memory + summary memory + embedding-based retrieval + code-aware context)
