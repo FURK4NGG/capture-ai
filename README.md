@@ -254,7 +254,7 @@ bind = $mainMod, Q, exec, $capture-ai text
 ## 🔎 ALL APP FEATURES
 <details>
 <summary>For Nerds</summary>
-1. For Nerds
+
 
 1. Chat management  
 Create, switch, delete, rename, pin/unpin chats. Chats are sorted with pinned chats first, then by last modified time.
