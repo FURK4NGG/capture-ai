@@ -29,11 +29,22 @@
    sudo pacman -S --needed git python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
 
+   Network & Runtime Dependencies
+   ```
+   sudo pacman -S --needed python-requests wget
+   ```
+
    Enviroment
    ```
    python -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
+   ```
+   <br><br>
+   📄 Python File Processing(DOCX / XLSX / PDF)
+   ```
+   sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab ttf-dejavu
+yay -S python-docx
    ```
    <br><br>
    Offline Voice Input (Speech → Text)
@@ -49,6 +60,11 @@
    >arecord
    ```
    sudo pacman -S --needed alsa-utils
+   ```
+   <br><br>
+   🎧 Audio / System Integration
+   ```
+   sudo pacman -S --needed libpulse gdk-pixbuf2
    ```
    <br><br>
    📄 Offline Speech to Text
