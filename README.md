@@ -9,15 +9,15 @@
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 <details>
 <summary>2. Make sure you place your files in the following directories.</summary>
-   ~/capture-ai/ui.py  
-   ~/capture-ai/ai.py  
-   ~/capture-ai/cli.py  
-   ~/capture-ai/capture-ai.sh  
-   ~/capture-ai/language/en.json  
-   ~/capture-ai/language/tr.json  
-   ~/.config/capture-ai/config.json  
-   ~/.config/capture-ai/requirements.txt  
-   ~/.config/scripts/screenprint.sh  
+   ~/capture-ai/ui.py<br>
+   ~/capture-ai/ai.py<br>
+   ~/capture-ai/cli.py<br>
+   ~/capture-ai/capture-ai.sh<br>
+   ~/capture-ai/language/en.json<br>
+   ~/capture-ai/language/tr.json<br>
+   ~/.config/capture-ai/config.json<br>
+   ~/.config/capture-ai/requirements.txt<br>
+   ~/.config/scripts/screenprint.sh
 </details>
 <details>
 <summary>3. Download Packages</summary>
