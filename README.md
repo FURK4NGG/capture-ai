@@ -31,7 +31,7 @@
    ```
    sudo pacman -S --needed python python-virtualenv git
    ```
-   Enviroment
+   Environment
    ```
    python -m venv venv
    source venv/bin/activate
@@ -136,7 +136,7 @@
 
 
    <details>
-   <summary>Debian/Ubuntu/Rasberry Pi OS</summary>
+   <summary>Debian/Ubuntu/Raspberry Pi OS</summary>
 
       
    ```
@@ -147,7 +147,7 @@
    sudo apt update
    sudo apt install -y python3 python3-venv git
    ```
-   Enviroment
+   Environment
    ```
    python3 -m venv venv
    source venv/bin/activate
