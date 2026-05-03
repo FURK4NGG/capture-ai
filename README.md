@@ -26,12 +26,15 @@
 
    ```
    cd ~/.config/capture-ai/
-   sudo pacman -S --needed git python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
+   ```
+   Core System & Python
+   ```
+   sudo pacman -S --needed python python-virtualenv git
    ```
 
-   🌐 Network & Runtime Dependencies
+   🖥️ GTK4 UI Dependencies
    ```
-   sudo pacman -S --needed python-requests wget
+   sudo pacman -S --needed gtk4 libadwaita python-gobject gobject-introspection
    ```
 
    Enviroment
@@ -41,25 +44,29 @@
    pip install -r requirements.txt
    ```
    <br><br>
-   📄 Python File Processing(DOCX / XLSX / PDF)
+   🎨 Rendering & Graphics
    ```
-   sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab ttf-dejavu
-yay -S python-docx
+   sudo pacman -S --needed cairo pango gdk-pixbuf2
    ```
    <br><br>
-   Offline Voice Input (Speech → Text)
-
-   🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
-
-   🎙️voice record
-   >pw-record  
+   🌐 4. Network & Runtime
    ```
-   sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse
+   sudo pacman -S --needed python-requests wget
    ```
+   <b><br>
+   📄 5. File Processing (DOCX / XLSX / PDF)
+   ```
+   sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab ttf-dejavu
+   yay -S python-docx
+   ```
+   <br><br>
+   🎧 Audio / Voice  
    
-   >arecord
+   🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
+   <br>
+   🎙️ Offline Voice Input,voice record (Speech → Text)
    ```
-   sudo pacman -S --needed alsa-utils
+   sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse libpulse alsa-utils
    ```
    <br><br>
    🎧 Audio / System Integration
@@ -67,7 +74,7 @@ yay -S python-docx
    sudo pacman -S --needed libpulse gdk-pixbuf2
    ```
    <br><br>
-   📄 Offline Speech to Text
+   📄 Build Offline Speech to Text
     
    ```
    sudo pacman -S --needed cmake make gcc
@@ -112,12 +119,15 @@ yay -S python-docx
      -l tr
    ```
    <br><br>
-   Screenshot
+   📸 Screenshot
    ```
    sudo pacman -S --needed grim slurp mako libnotify
    ```
-   <br>
-   <br>
+   <br><br>
+   🧰 System Utilities
+   ```
+   sudo pacman -S --needed glib2 xdg-utils noto-fonts-emoji
+   ```
    </details>
 
 
