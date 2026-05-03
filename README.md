@@ -29,7 +29,7 @@
    sudo pacman -S --needed git python python-virtualenv python-gobject gtk4 libadwaita gobject-introspection cairo pango glib2 xdg-utils noto-fonts-emoji
    ```
 
-   Network & Runtime Dependencies
+   🌐 Network & Runtime Dependencies
    ```
    sudo pacman -S --needed python-requests wget
    ```
@@ -140,12 +140,25 @@ yay -S python-docx
    sudo apt update && sudo apt install -y git python3 python3-venv python3-gi gobject-introspection gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 xdg-utils fonts-noto-color-emoji
    ```
 
+   🌐 Network & Runtime Dependencies
+   ```
+   sudo apt install -y python3-requests wget
+   ```
+
    Enviroment
    ```
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
+   <br><br>
+   📄 Python File Processing(DOCX / XLSX / PDF)
+   ```
+   sudo apt install -y python3-pypdf python3-pymupdf python3-openpyxl python3-reportlab fonts-dejavu
+   pip install python-docx
+   ```
+   or
+   ```sudo apt install -y python3-docx```
    <br><br>
    Offline Voice Input (Speech → Text)
 
@@ -160,6 +173,11 @@ yay -S python-docx
    >arecord
    ```
    sudo apt install -y alsa-utils
+   ```
+   <br><br>
+   🎧 Audio / System Integration
+   ```
+   sudo apt install -y pulseaudio-utils libpulse0 gir1.2-gdkpixbuf-2.0
    ```
    <br><br>
    📄 Offline Speech to Text
