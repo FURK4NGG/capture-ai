@@ -2,7 +2,7 @@
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- ui ve cli icin proje resimleri -->
 <!-- ram tuketimi gibi bilgiler -->
-<!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,bizim baskmadigimiz anda cevap gelirse kullaniciya gosterme -->
+<!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
 
 ## 👀 capture-ai Overview
 
