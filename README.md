@@ -141,14 +141,12 @@
       
    ```
    cd ~/.config/capture-ai/
-   sudo apt update && sudo apt install -y git python3 python3-venv python3-gi gobject-introspection gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0 xdg-utils fonts-noto-color-emoji
    ```
-
-   🌐 Network & Runtime Dependencies
+   🧩 Core System & Python
    ```
-   sudo apt install -y python3-requests wget
+   sudo apt update
+   sudo apt install -y python3 python3-venv git
    ```
-
    Enviroment
    ```
    python3 -m venv venv
@@ -156,35 +154,41 @@
    pip install -r requirements.txt
    ```
    <br><br>
-   📄 Python File Processing(DOCX / XLSX / PDF)
+   🖥️ GTK4 UI Dependencies
+   ```
+   sudo apt install -y python3-gi gobject-introspection gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
+   ```
+   <br><br>
+   🎨 Rendering & Graphics
+   ```
+   sudo apt install -y libcairo2 libpango-1.0-0 gir1.2-pango-1.0 gir1.2-gdkpixbuf-2.0
+   ```
+   <br><br>
+   🌐 Network & Runtime
+   ```
+   sudo apt install -y python3-requests wget
+   ```
+   <br><br>
+   📄 File Processing (DOCX / XLSX / PDF)
    ```
    sudo apt install -y python3-pypdf python3-pymupdf python3-openpyxl python3-reportlab fonts-dejavu
    pip install python-docx
    ```
    or
-   ```sudo apt install -y python3-docx```
+   ```
+   sudo apt install -y python3-docx
+   ```
    <br><br>
-   Offline Voice Input (Speech → Text)
-
-   🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
-
-   🎙️voice record
-   >pw-record  
-   ```
-   sudo apt install -y pipewire wireplumber pipewire-pulse
-   ```
+   🎧 Audio / Voice  
    
-   >arecord
+   🎙️ voice record -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
+   <br>
+   🎙️ Offline Voice Input,voice record (Speech → Text)
    ```
-   sudo apt install -y alsa-utils
-   ```
-   <br><br>
-   🎧 Audio / System Integration
-   ```
-   sudo apt install -y pulseaudio-utils libpulse0 gir1.2-gdkpixbuf-2.0
+   sudo apt install -y pipewire wireplumber pipewire-pulse libpipewire-0.3-0 libspa-0.2-modules alsa-utils pulseaudio-utils libpulse0
    ```
    <br><br>
-   📄 Offline Speech to Text
+   📄 Build Offline Speech to Text
     
    ```
    sudo apt install -y cmake make gcc
@@ -229,12 +233,15 @@
      -l tr
    ```
    <br><br>
-   Screenshot
+   📸 Screenshot
    ```
    sudo apt install -y grim slurp scrot dunst libnotify-bin
    ```
-   <br>
-   <br>
+   <br><br>
+   🧰 System Utilities
+   ```
+   sudo apt install -y xdg-utils fonts-noto-color-emoji
+   ```
    </details>
 
 </details>
