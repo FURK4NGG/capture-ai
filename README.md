@@ -1,9 +1,8 @@
 # ai-controller
-<!-- system prompt caching,dosya içeriklerini sadece gerekince gönderme -->
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- ui ve cli icin proje resimleri -->
 <!-- ram tuketimi gibi bilgiler -->
-<!-- for nerds ler falan -->
+
 
 ## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
