@@ -27,22 +27,21 @@
    ```
    cd ~/.config/capture-ai/
    ```
-   Core System & Python
+   🧩 Core System & Python
    ```
    sudo pacman -S --needed python python-virtualenv git
    ```
-
-   🖥️ GTK4 UI Dependencies
-   ```
-   sudo pacman -S --needed gtk4 libadwaita python-gobject gobject-introspection
-   ```
-
    Enviroment
    ```
    python -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
    ```
+   <br><br>
+   🖥️ GTK4 UI Dependencies
+   ```
+   sudo pacman -S --needed gtk4 libadwaita python-gobject gobject-introspection
+   ```  
    <br><br>
    🎨 Rendering & Graphics
    ```
@@ -62,7 +61,7 @@
    <br><br>
    🎧 Audio / Voice  
    
-   🎙️ pw-record / arecord -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
+   🎙️ voice record -> 📄 WAV file -> 🧠 whisper-cli -> ✍ Text input  
    <br>
    🎙️ Offline Voice Input,voice record (Speech → Text)
    ```
