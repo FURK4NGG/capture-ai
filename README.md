@@ -69,11 +69,6 @@
    sudo pacman -S --needed pipewire wireplumber pipewire-audio pipewire-pulse libpulse alsa-utils
    ```
    <br><br>
-   🎧 Audio / System Integration
-   ```
-   sudo pacman -S --needed libpulse gdk-pixbuf2
-   ```
-   <br><br>
    📄 Build Offline Speech to Text
     
    ```
