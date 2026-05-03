@@ -28,7 +28,6 @@
 - [x] Keep all your chats in your machine
 - [x] Just one configure file
 - [x] Easy access with keyboard shortcuts
-- [x] Access every AI model easily
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
 - [ ] Compatible with macOS, Windows
