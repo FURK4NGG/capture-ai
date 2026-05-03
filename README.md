@@ -52,7 +52,7 @@
    ```
    sudo pacman -S --needed python-requests wget
    ```
-   <b><br>
+   <br><br>
    📄 File Processing (DOCX / XLSX / PDF)
    ```
    sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab ttf-dejavu
