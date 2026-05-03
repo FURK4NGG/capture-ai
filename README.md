@@ -1,4 +1,4 @@
-# ai-controller
+<!-- ai-controller -->
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- ui ve cli icin proje resimleri -->
 <!-- ram tuketimi gibi bilgiler -->
