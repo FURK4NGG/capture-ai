@@ -355,6 +355,8 @@ Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 
 <details>
 <summary>Bilgi Hastaları için</summary>
+
+   
 1. Chat yönetimi
    Chat oluşturma, değiştirme, silme, yeniden adlandırma, sabitleme/sabitten çıkarma. Chatler önce sabitlenenler, sonra son değiştirilme zamanına göre sıralanır.
 
