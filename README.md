@@ -279,7 +279,7 @@
 
 
 
-🎉 Run
+## 🎉 Run
 ```
 bash capture-ai.sh (image,text,cli)  
 ```
