@@ -6,6 +6,32 @@
 ## 👀 capture-ai Overview
 
 ## 🚀 Features
+- [x] Easy access with keyboard shortcuts
+- [x] Model management per chat
+- [x] Generate image
+- [x] Access every AI model easily
+- [x] Unlimited reference tree support
+- [x] Customize how the AI responds
+- [x] Shows how many tokens are consumed for each message
+- [x] Dark/Light themes
+- [x] Just one configure file
+- [x] Copyable code blocks
+- [x] Regenerate
+- [x] Keep all your chats in your machine
+- [x] Enter input with your voice -Speech to text(online or local)-
+- [x] Adding documents via drag & drop
+- [x] AI can read, analyze, modify your documents (within permission)
+- [x] Files returned as downloadable outputs
+- [x] Supports PDF, DOCX, XLSX
+- [x] Lazy Loading, Chat Loading System (Loads latest messages first,older messages load on scroll)
+- [x] Change UI colors
+- [x] Language support [Turkish, English]*You can easily create your own language file*
+- [x] Caching the language file to avoid repeated file reads
+- [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
+- [x] Control via Terminal (excluding STT and some UI features)
+- [x] Per-chat conversational RAG system with enable/disable support(short-term memory + summary memory + embedding-based retrieval + code-aware context)
+- [x] Run local text model(Local API-based AI)
+- [ ] Compatible with macOS, Windows
 
 ## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
@@ -267,34 +293,6 @@ bind = $mainMod, Q, exec, $capture-ai text
 
 
 <br><br>
-
-## Roadmap
-- [x] Easy access with keyboard shortcuts
-- [x] Model management per chat
-- [x] Generate image
-- [x] Access every AI model easily
-- [x] Unlimited reference tree support
-- [x] Customize how the AI responds
-- [x] Shows how many tokens are consumed for each message
-- [x] Dark/Light themes
-- [x] Just one configure file
-- [x] Copyable code blocks
-- [x] Regenerate
-- [x] Keep all your chats in your machine
-- [x] Enter input with your voice -Speech to text(online or local)-
-- [x] Adding documents via drag & drop
-- [x] AI can read, analyze, modify your documents (within permission)
-- [x] Files returned as downloadable outputs
-- [x] Supports PDF, DOCX, XLSX
-- [x] Lazy Loading, Chat Loading System (Loads latest messages first,older messages load on scroll)
-- [x] Change UI colors
-- [x] Language support [Turkish, English]*You can easily create your own language file*
-- [x] Caching the language file to avoid repeated file reads
-- [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
-- [x] Control via Terminal (excluding STT and some UI features)
-- [x] Per-chat conversational RAG system with enable/disable support(short-term memory + summary memory + embedding-based retrieval + code-aware context)
-- [x] Run local text model(Local API-based AI)
-- [ ] Compatible with macOS, Windows
 
  
 ## 🔎 ALL APP FEATURES
