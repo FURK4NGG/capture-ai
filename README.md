@@ -355,109 +355,101 @@ Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 
 <details>
 <summary>Bilgi Hastaları için</summary>
-1. Chat yönetimi  
-Yeni chat oluşturma (chat_1.json, chat_2.json…)  
-Chat’ler arasında geçiş  
-Chat silme (onay pencereli, geri alınamaz)  
-Chat ismini değiştirme (rename popover)  
-Chat sabitleme (📌 pinned)  
-Chat liste sıralaması: önce pinned, sonra son değiştirilene gör  
+1. Chat yönetimi
+   Chat oluşturma, değiştirme, silme, yeniden adlandırma, sabitleme/sabitten çıkarma. Chatler önce sabitlenenler, sonra son değiştirilme zamanına göre sıralanır.
 
-2. Kalıcı ayarlar (config.json)  
-Son açık chat’i hatırlama (last_chat)  
-Karanlık/Aydınlık tema tercihi (dark_mode)  
-Sabitlenen chat’ler listesi (pinned_chats)  
-Model listesi (ai_models)  
-Chat başına model eşlemesi (chat_models)  
-OpenRouter API key saklama (open_router_key)  
-Mikrofon modu online/offline seçimi (is_mic_online)  
-Online STT model seçimi (stt_model_online)  
-Offline STT için whisper.cpp binary/model yolları (whisper_cpp_bin, whisper_cpp_model)  
+2. Yerel chat saklama
+   Tüm chatler uygulamanın cache klasörü altında yerel olarak saklanır.
 
-3. Sidebar UI  
-Sidebar daralt / genişlet (☰)  
-Chats listesini aç/kapat  
-AI models listesini aç/kapat  
+3. Bölümlü chat yükleme
+   Chatler lazy loading kullanır. İlk olarak sadece son 10 mesaj yüklenir, yukarı kaydırıldıkça eski mesajlar yüklenir.
 
-4. Model yönetimi (chat başına)  
-Her chat için ayrı aktif model  
-Model seçince o chat’e atanır  
-LRU mantığı: seçtiğin model liste başına alınır  
-Model silme (son model silinemez; en az 1 model kalır)  
-Silinen model chat’lerde kullanılıyorsa otomatik default modele çekilir (self-heal)  
-“AI Models +” ile yeni model ekleme (dialog + OpenRouter models linki)  
+4. Kalıcı yapılandırma
+   Tema, modeller, sabit chatler, son chat, STT, RAG, renkler, local provider’lar ve dil ayarları tek bir config.json dosyasında tutulur.
 
-5. Mesaj seçim modu  
-Mesaja tıklayarak bir/çok mesaj seçme  
-Seçili mesaj sayısını gösteren bar  
-Seçimi tek tuşla temizleme (✕)  
-Seçili mesajlar balon üzerinde outline ile işaretlenir  
+5. Chat başına model yönetimi
+   Her chat kendi aktif AI modeline sahip olabilir. En son seçilen modeller listenin en üstüne alınır.
 
-6. Reference trees (referans zinciri / ağaç)  
-Seçtiğin referans mesajların used_refs zincirini genişletir  
-Yani referansın referansı da otomatik dahil edilir (foto/ref kaybolmasın diye)  
-Gönderilen yeni kullanıcı mesajına:  
-used_refs (AI’ya giden index seti)  
-refs_groups (UI’da referans önizleme grupları)  
-kaydedilir  
+6. Online ve local model desteği
+   OpenRouter modelleri ve Ollama gibi local API tabanlı modeller desteklenir.
 
-7. Referans önizleme (refs preview)  
-Referansla gönderilmiş mesajlar üstte “mini preview” olarak gösterilir  
-Grup grup gösterim (refs_groups)  
-Uzun satırlar kısaltılır (200 karakter)  
+7. Local provider ayarları
+   Base URL, başlatma komutu, durdurma komutu, system prompt ve model parametreleri tanımlanabilir.
 
-8. Regenerate (♻)  
-Tek seçili balonda görünür  
-User mesajı seçilirse: aynı mesajı yeniden sorar  
-Bot mesajı seçilirse:  
-önceki user sorusunu bulur  
-bot cevabını “kopyalama bloğu” içeriğiyle iyileştirerek yeniden üretir  
-Regenerate mesajı özel renkle işaretlenir (regen)  
-Regenerate sırasında referans zinciri korunur (reference trees)  
+8. Sidebar arayüzü
+   Açılıp kapanabilen sidebar içinde ayrı Chat ve AI Model listeleri bulunur.
 
-9. Copy (📋)  
-Tek seçili balonda görünür  
-Mesaj içeriğinde copy ... copy bloğu varsa sadece içi kopyalanır  
-Yoksa tüm mesaj kopyalanır  
+9. Context modu geçişi
+   Her chat Direct mode ve RAG mode arasında geçiş yapabilir.
 
-10. Kod bloğu algılama  
-İçerikte copy sınırları varsa “code-block” görünümü ile render eder  
-Kod bloğunda “Kopyala” butonu vardır (overlay)  
+10. Chat başına RAG sistemi
+    Kısa süreli hafıza, özet hafıza, basit retrieval ve kod farkındalıklı context desteği vardır.
 
-11. Görsel gönderme / önizleme  
-Bir görsel “pending_image” olarak eklenebilir  
-Chat’e mesajla birlikte image path kaydedilir  
-Mesajlarda görsel varsa küçük preview gösterilir  
-Gönderim öncesi preview kutusu gösterilir, gönderince temizlenir  
+11. Reference tree desteği
+    Seçilen referanslar recursive olarak genişletilir, böylece context kaybı yaşanmaz.
 
-12. Typing indicator  
-AI yanıtı beklerken “Düşünüyor…” animasyonu  
-Yanıt gelince otomatik kaldırılır  
+12. Mesaj seçme modu
+    Kullanıcı bir veya birden fazla mesaj seçebilir, temizleyebilir, kopyalayabilir, yeniden oluşturabilir veya referans olarak kullanabilir.
 
-13. Scroll davranışları  
-Aşağı kaydırma butonu (↓) — kullanıcı yukarıdaysa görünür  
-Tıklayınca en alta iner ve auto-scroll tekrar açılır  
-Scroll konumuna göre buton otomatik gizlenir/gösterilir  
-(Sende ayrıca “sadece regenerate’de aşağı kaydır” mantığını da ayarladık)  
+13. Regenerate (yeniden oluşturma)
+    Seçilen user veya bot mesajlarından yeniden üretim yapılır ve referans context korunur.
 
-14. Input kısayolları  
-Enter: gönder  
-Shift+Enter: yeni satır  
-(Eklediğimiz) Ctrl+C / Ctrl+V / Ctrl+X / Ctrl+A kopyala–yapıştır–kes–tümünü seç  
+14. Kopyalanabilir kod blokları
+    Copy ile işaretlenen içerikler, kopyalama butonu olan kod blokları olarak gösterilir.
 
-15. Mikrofon: Sesle yazma (Voice-to-text)  
-🎤 butonu ile kayıt başlat / ⏹ ile durdur  
-Linux’ta pw-record varsa onu kullanır, yoksa arecord  
-Durdurunca offline/online STT’ye göre transcribe edip input’a ekler  
+15. Görsel üretimi ve yönetimi
+    Görsel üretimi, önizleme, cache’lenmiş görseller ve image attachment desteği bulunur.
 
-16. Offline STT (whisper.cpp)  
-whisper-cli + ggml-tiny.bin ile düşük CPU transkripsiyon  
-Çıktıyı .txt’den okur (veya stdout fallback)  
+16. Doküman desteği
+    PDF, DOCX, XLSX, TXT ve MD dosyaları oluşturma ve çıktı alma desteklenir. Üretilen dosyalar indirilebilir olarak sunulur.
 
-17. Online STT (OpenRouter)  
-is_mic_online: true ise OpenRouter üzerinden STT  
-Audio input input_audio ile base64 wav gönderme  
-Model stt_model_online ile seçilir  
+17. PDF işleme
+    PDF metin içeriyorsa text olarak gönderilir. Metin yoksa ilk sayfalar PNG’ye çevrilerek image_url olarak gönderilir.
+
+18. Doküman düzenleme davranışı
+    AI, izin verildiğinde dosyaları okuyabilir, analiz edebilir, özetleyebilir, yeniden yazabilir ve düzenlenmiş çıktı oluşturabilir.
+
+19. Dosya oluşturma protokolü
+    DOCX, XLSX, PDF, TXT ve MD dosyaları AI çıktısından oluşturulabilir ve indirilebilir olarak sunulur.
+
+20. XLSX desteği
+    Yeni tablolar oluşturabilir ve mevcut XLSX dosyaları filtreleyebilir.
+
+21. Drag & drop dosya ekleme
+    Dosyalar ve görseller sürükle-bırak veya dosya seçici ile eklenebilir.
+
+22. Düzenlenebilir dosya izni
+    Eklenen dosyalar editable olarak işaretlenebilir. AI sadece izin verildiğinde değişiklik yapar.
+
+23. Voice-to-text girişi
+    Mikrofon ile kayıt ve online/local STT ile metne çevirme desteklenir.
+
+24. Offline STT
+    whisper.cpp kullanarak yerel ses tanıma yapılır.
+
+25. Online STT
+    OpenRouter üzerinden ses modeli kullanılarak WAV verisi input_audio olarak gönderilir.
+
+26. Token kullanım gösterimi
+    Her mesaj için input, output ve toplam token kullanımı gösterilebilir.
+
+27. Token maliyet hesaplama
+    Mesaj maliyeti, ayarlanabilir token fiyatına göre tahmin edilebilir.
+
+28. Tema sistemi
+    Dark/light tema ve özelleştirilebilir UI renkleri desteklenir.
+
+29. Dil sistemi
+    Türkçe ve İngilizce gibi dış dil dosyaları desteklenir ve cache’lenerek performans artırılır.
+
+30. Prompt chooser
+    copyable, apply, PDF edit, file create, structured output ve code gibi prompt blokları açılıp kapatılabilir.
+
+31. Terminal kontrolü
+    STT ve bazı UI özellikleri hariç terminal üzerinden kullanım desteklenir.
+
+32. Linux uyumluluğu
+    Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
 </details>
 
 ## 🔒 License  
