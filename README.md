@@ -237,7 +237,10 @@ bind = $mainMod, Q, exec, $capture-ai text
 - [x] Keep all your chats in your machine
 - [x] Enter input with your voice -Speech to text(online or local)-
 - [x] Adding documents via drag & drop
-- [x] AI can access and change your documents within permission
+- [x] AI can read, analyze, modify your documents (within permission)
+- [x] Files returned as downloadable outputs
+- [x] Supports PDF, DOCX, XLSX
+- [x] Lazy Loading, Chat Loading System (Loads latest messages first,older messages load on scroll)
 - [x] Change UI colors
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
