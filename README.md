@@ -83,7 +83,7 @@
    🧠 Install whisper.cpp (Offline Speech Recognition Engine)  
    
    ```
-   git clone https://github.com/ggml-org/whisper.cpp.git  
+   git clone https://github.com/ggml-org/whisper.cpp.git ~/whisper.cpp
    cd whisper.cpp  
    cmake -B build  
    cmake --build build -j --config Release
@@ -107,9 +107,9 @@
    
    Manual Test  
    ```
-   /home/bob/whisper.cpp/build/bin/whisper-cli \  
-     -m /home/bob/.local/share/whisper/ggml-tiny.bin \  
-     -f /tmp/capture-ai-mic-20260228-205753.wav \  
+   ~/whisper.cpp/build/bin/whisper-cli \
+     -m ~/.local/share/whisper/ggml-tiny.bin \
+     -f /tmp/capture-ai-mic-20260228-205753.wav \
      -l tr
    ```
    <br><br>
