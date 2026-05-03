@@ -49,12 +49,12 @@
    sudo pacman -S --needed cairo pango gdk-pixbuf2
    ```
    <br><br>
-   🌐 4. Network & Runtime
+   🌐 Network & Runtime
    ```
    sudo pacman -S --needed python-requests wget
    ```
    <b><br>
-   📄 5. File Processing (DOCX / XLSX / PDF)
+   📄 File Processing (DOCX / XLSX / PDF)
    ```
    sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab ttf-dejavu
    yay -S python-docx
