@@ -3,6 +3,9 @@
 <!-- ui ve cli icin proje resimleri -->
 <!-- ram tuketimi gibi bilgiler -->
 
+## 👀 capture-ai Overview
+
+## 🚀 Features
 
 ## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
