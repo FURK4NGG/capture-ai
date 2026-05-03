@@ -5,7 +5,7 @@
 <!-- ram tuketimi gibi bilgiler -->
 <!-- for nerds ler falan -->
 
-## 🔎 Preparation
+## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 <details>
 <summary>2. Make sure you place your files in the following directories.</summary>
