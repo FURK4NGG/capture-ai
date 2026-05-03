@@ -13,6 +13,7 @@
    ~/capture-ai/ai.py<br>
    ~/capture-ai/cli.py<br>
    ~/capture-ai/capture-ai.sh<br>
+   ~/capture-ai/memory.py<br>
    ~/capture-ai/language/en.json<br>
    ~/capture-ai/language/tr.json<br>
    ~/.config/capture-ai/config.json<br>
