@@ -252,9 +252,10 @@
 
 
 
-Run  
+4. Run
+```
 bash capture-ai.sh (image,text,cli)  
-
+```
 
 -----------------HYPRLAND.CONF-----------------  
 $capture-ai = /home/$USER/capture-ai/capture-ai.sh  
