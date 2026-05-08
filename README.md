@@ -35,6 +35,7 @@ pdf_text_image → layout JSON + image PNG → AI text JSON / image output → a
 - [x] Easy access with keyboard shortcuts
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
+- [ ] Web Search (supports online and local models)
 - [ ] Compatible with macOS, Windows
 
 ## 📦 Setup
