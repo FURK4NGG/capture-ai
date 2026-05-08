@@ -23,7 +23,7 @@ is_wayland() {
 }
 
 take_fullscreen() {
-    local file="$DIR/tam-ekran-$(date +%Y%m%d-%H%M%S).png"
+    local file="$DIR/full-screen-$(date +%Y%m%d-%H%M%S).png"
 
     if is_wayland && command -v grim >/dev/null 2>&1; then
         grim "$file"
@@ -88,7 +88,7 @@ sys.exit(1)
             )"
 
             if [ -n "${output_name:-}" ]; then
-                local file="$DIR/tam-ekran-$(date +%Y%m%d-%H%M%S).png"
+                local file="$DIR/full-screen-$(date +%Y%m%d-%H%M%S).png"
                 grim -o "$output_name" "$file"
                 notify_ok "Selected Screen"
                 printf '%s\n' "$file"
@@ -113,7 +113,7 @@ take_selection() {
     if is_wayland && command -v grim >/dev/null 2>&1 && command -v slurp >/dev/null 2>&1; then
         take_wayland_selected_or_monitor
     elif command -v scrot >/dev/null 2>&1; then
-        local file="$DIR/secili-alan-$(date +%Y%m%d-%H%M%S).png"
+        local file="$DIR/selected-area-$(date +%Y%m%d-%H%M%S).png"
         scrot -s "$file"
     
         if [ ! -f "$file" ]; then
