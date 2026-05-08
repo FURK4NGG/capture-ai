@@ -427,13 +427,13 @@ AI responses are streamed in real-time. The assistant message appears gradually 
 34. Advanced PDF processing pipeline  
 pdf_text → extract text from the PDF → AI generates DOCX → app converts DOCX back to PDF  
 
-   pdf_image → if PDF Image mode is selected, convert PDF pages to PNG → AI analyzes the image or returns a PNG  
+      pdf_image → if PDF Image mode is selected, convert PDF pages to PNG → AI analyzes the image or returns a PNG  
                → if a PNG is returned, the app converts it into a PDF  
 
-   pdf_image + mixed/image block → extract image blocks from the PDF → AI returns edited PNG  
+      pdf_image + mixed/image block → extract image blocks from the PDF → AI returns edited PNG  
                                → app places the new image back into the original PDF at the same position  
 
-   pdf_text_image → extract layout as JSON + extract images as PNG  
+      pdf_text_image → extract layout as JSON + extract images as PNG  
                     → AI returns text_replacements JSON (and optionally images)  
                     → app rebuilds the PDF using the original layout with updated text and images
 
