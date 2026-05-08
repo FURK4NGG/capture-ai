@@ -9,6 +9,26 @@ pdf_text_image → layout JSON + image PNG → AI text JSON / image output → a
 <!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
 
 ## 👀 capture-ai Overview
+Capture AI is not just a simple chat application.
+
+It is a hybrid AI platform that combines:
+
+💬 Conversational AI
+📄 Document processing & editing
+⚙️ Intelligent pipelines
+
+All in a single system.
+
+Unlike traditional chat tools, Capture AI can understand, transform, and generate real files — not just text.
+
+From a single prompt, it can:
+
+PDF → Extract → Transform → Rebuild → Download
+
+It supports both online models (OpenRouter) and local AI providers, giving full control over performance, privacy, and behavior.
+
+❌ Not just a chat app  
+✅ A hybrid AI platform (chat + document editor + pipeline engine)
 
 ## 🚀 Features
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
@@ -400,6 +420,55 @@ The project also supports terminal usage, excluding STT and some GUI-only featur
 
 32. Linux compatibility  
 Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
+
+33. Streaming response system  
+AI responses are streamed in real-time. The assistant message appears gradually as it is being generated instead of waiting for the full response.
+
+34. Advanced PDF processing pipeline  
+pdf_text → extract text from the PDF → AI generates DOCX → app converts DOCX back to PDF  
+
+pdf_image → if PDF Image mode is selected, convert PDF pages to PNG → AI analyzes the image or returns a PNG  
+            → if a PNG is returned, the app converts it into a PDF  
+
+pdf_image + mixed/image block → extract image blocks from the PDF → AI returns edited PNG  
+                               → app places the new image back into the original PDF at the same position  
+
+pdf_text_image → extract layout as JSON + extract images as PNG  
+                 → AI returns text_replacements JSON (and optionally images)  
+                 → app rebuilds the PDF using the original layout with updated text and images
+
+35. Generated files system  
+AI can return generated files (PDF, DOCX, XLSX, etc.), which are automatically saved in the app cache and displayed in chat with download buttons.
+
+36. Structured file generation protocol  
+AI responses can include structured file_create blocks, allowing the app to generate real files programmatically without manual parsing.
+
+37. Editable file safety system  
+Files can be marked as editable or read-only. AI is strictly prevented from modifying files unless explicit permission is enabled.
+
+38. Smart PDF type detection  
+Automatically detects whether a PDF is text-based, image-based, or mixed, and applies the appropriate processing pipeline.
+
+39. Mixed PDF layout reconstruction  
+For PDFs containing both text and images, the app extracts layout structure and rebuilds the document after AI modifications.
+
+40. Image-to-PDF auto conversion  
+If the AI returns image outputs (e.g., PNG), the app automatically converts them into PDF format when needed.
+
+41. Generated image caching  
+All generated images are cached locally and can be reused without re-generation.
+
+42. AI-returned file handling  
+Supports file outputs returned as base64 or URLs and converts them into downloadable files automatically.
+
+43. Modular prompt system  
+System prompts are divided into selectable blocks, allowing dynamic control over AI behavior without modifying core logic.
+
+44. Local provider startup automation  
+Local AI providers can be automatically started or stopped using configured commands.
+
+45. Chat-aware context building  
+The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.               
 </details>
 
 <details>
@@ -501,6 +570,55 @@ Designed for Linux devices, including Arch and Debian/Ubuntu-based systems.
 
 32. Linux uyumluluğu
     Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
+
+33. Streaming yanıt sistemi
+AI yanıtları gerçek zamanlı olarak akış halinde gösterilir. Asistan mesajı, tamamının oluşmasını beklemek yerine yazılırken kademeli olarak ekranda görünür.
+
+34. Gelişmiş PDF işleme pipeline’ı
+pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX’i tekrar PDF’e çevirir
+
+pdf_image → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir → AI görseli analiz eder veya PNG döndürür
+→ PNG dönerse uygulama bunu PDF’e çevirir
+
+pdf_image + mixed/image block → PDF’ten görsel bloklar çıkarılır → AI düzenlenmiş PNG döndürür
+→ uygulama yeni görseli PDF içinde aynı konuma yerleştirir
+
+pdf_text_image → layout JSON olarak çıkarılır + görseller PNG olarak alınır
+→ AI text_replacements JSON (ve opsiyonel görseller) döndürür
+→ uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur
+
+35. Üretilen dosya sistemi
+AI tarafından oluşturulan dosyalar (PDF, DOCX, XLSX vb.) otomatik olarak uygulama cache dizinine kaydedilir ve sohbet içinde indirme butonlarıyla gösterilir.
+
+36. Yapılandırılmış dosya üretim protokolü
+AI yanıtları, manuel parse gerektirmeden doğrudan dosya üretimini sağlayan yapılandırılmış file_create blokları içerebilir.
+
+37. Düzenlenebilir dosya güvenlik sistemi
+Dosyalar düzenlenebilir veya salt okunur olarak işaretlenebilir. Açık izin verilmeden AI’ın dosyaları değiştirmesi kesin olarak engellenir.
+
+38. Akıllı PDF türü tespiti
+PDF’in metin tabanlı, görsel tabanlı veya karışık olup olmadığı otomatik olarak tespit edilir ve uygun işleme pipeline’ı uygulanır.
+
+39. Karışık PDF layout yeniden oluşturma
+Hem metin hem görsel içeren PDF’lerde, layout yapısı çıkarılır ve AI düzenlemelerinden sonra belge yeniden oluşturulur.
+
+40. Görselden PDF’e otomatik dönüşüm
+AI görsel (örneğin PNG) çıktısı verdiğinde, uygulama bunu otomatik olarak PDF formatına dönüştürür.
+
+41. Üretilen görsel cache sistemi
+Oluşturulan tüm görseller yerel olarak cache’lenir ve tekrar üretmeye gerek kalmadan yeniden kullanılabilir.
+
+42. AI tarafından dönen dosya işleme sistemi
+Base64 veya URL olarak dönen dosyalar desteklenir ve otomatik olarak indirilebilir dosyalara dönüştürülür.
+
+43. Modüler prompt sistemi
+Sistem prompt’ları bloklara ayrılmıştır ve dinamik olarak açılıp kapatılarak AI davranışı kontrol edilebilir.
+
+44. Local provider başlatma otomasyonu
+Yerel AI sağlayıcıları, tanımlı komutlar ile otomatik olarak başlatılabilir veya durdurulabilir.
+
+45. Sohbet farkındalıklı context oluşturma
+Sistem; son mesajlar, özetler, kod context’i ve ilgili hafıza parçalarını kullanarak akıllı bir context oluşturur.
 </details>
 
 ## 🔒 License  
