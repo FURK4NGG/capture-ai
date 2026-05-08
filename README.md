@@ -577,15 +577,15 @@ AI yanıtları gerçek zamanlı olarak akış halinde gösterilir. Asistan mesaj
 34. Gelişmiş PDF işleme pipeline’ı
 pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX’i tekrar PDF’e çevirir
 
-pdf_image → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir → AI görseli analiz eder veya PNG döndürür
-→ PNG dönerse uygulama bunu PDF’e çevirir
+      pdf_image → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir → AI görseli analiz eder veya PNG döndürür
+      → PNG dönerse uygulama bunu PDF’e çevirir
 
-pdf_image + mixed/image block → PDF’ten görsel bloklar çıkarılır → AI düzenlenmiş PNG döndürür
-→ uygulama yeni görseli PDF içinde aynı konuma yerleştirir
+      pdf_image + mixed/image block → PDF’ten görsel bloklar çıkarılır → AI düzenlenmiş PNG döndürür
+      → uygulama yeni görseli PDF içinde aynı konuma yerleştirir
 
-pdf_text_image → layout JSON olarak çıkarılır + görseller PNG olarak alınır
-→ AI text_replacements JSON (ve opsiyonel görseller) döndürür
-→ uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur
+      pdf_text_image → layout JSON olarak çıkarılır + görseller PNG olarak alınır
+      → AI text_replacements JSON (ve opsiyonel görseller) döndürür
+      → uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur
 
 35. Üretilen dosya sistemi
 AI tarafından oluşturulan dosyalar (PDF, DOCX, XLSX vb.) otomatik olarak uygulama cache dizinine kaydedilir ve sohbet içinde indirme butonlarıyla gösterilir.
