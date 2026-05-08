@@ -34,14 +34,16 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
 - [x] Model management per chat
 - [x] Per-chat conversational RAG system with enable/disable support(short-term memory + summary memory + embedding-based retrieval + code-aware context)
-- [x] Run local text model(Local API-based AI)
+- [x] Run local AI providers (Ollama, LM Studio, vLLM, etc.)
 - [x] Shows how many tokens are consumed for each message
 - [x] AI can read, analyze, modify your documents (within permission)
-- [x] Files returned as downloadable outputs
-- [x] Supports PDF, DOCX, XLSX
+- [x] AI-generated files are automatically created, saved, and shown with download buttons
+- [x] Supports PDF, DOCX, XLSX, TXT, and MD (read & generate)
+- [x] Editable file permission system (safe file editing control)
 - [x] Unlimited reference tree support
-- [x] Generate image
+- [x] Image generation and image-based workflows
 - [x] Regenerate
+- [x] Modular prompt system (Prompt Chooser)
 - [x] Enter input with your voice -Speech to text(online or local)-
 - [x] Copyable code blocks
 - [x] Control via Terminal (excluding STT and some UI features)
@@ -52,6 +54,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [x] Dark/Light themes
 - [x] Keep all your chats in your machine
 - [x] Just one configure file
+- [x] Streaming response system (real-time output)
 - [x] Easy access with keyboard shortcuts
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
