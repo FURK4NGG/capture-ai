@@ -13,9 +13,9 @@ Capture AI is not just a simple chat application.
 
 It is a hybrid AI platform that combines:
 
-💬 Conversational AI
-📄 Document processing & editing
-⚙️ Intelligent pipelines
+💬 Conversational AI  
+📄 Document processing & editing  
+⚙️ Intelligent pipelines  
 
 All in a single system.
 
