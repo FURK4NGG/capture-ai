@@ -62,13 +62,11 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [ ] Compatible with macOS, Windows
 
 ## 📦 Setup
+1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
+2. `Go to the`[`Tavily`](https://app.tavily.com/home)`and create your own api key`
 <details>
-<summary>1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`</summary>
-   OpenRouter: Provides access to online AI models through a single API.
-</details>
-
-<details>
-<summary>2. `Go to the`[`Tavily`](https://app.tavily.com/home)`and create your own api key`</summary>
+<summary>?</summary>
+   OpenRouter: Provides access to online AI models through a single API.<br>
    Tavily: Provides web search results and current online information for AI models.
 </details>
 
