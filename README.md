@@ -62,9 +62,18 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [ ] Compatible with macOS, Windows
 
 ## 📦 Setup
-1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
 <details>
-<summary>2. Make sure you place your files in the following directories.</summary>
+<summary>1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`</summary>
+   OpenRouter: Provides access to online AI models through a single API.
+</details>
+
+<details>
+<summary>2. `Go to the`[`Tavily`](https://app.tavily.com/home)`and create your own api key`</summary>
+   Tavily: Provides web search results and current online information for AI models.
+</details>
+
+<details>
+<summary>3. Make sure you place your files in the following directories.</summary>
    ~/capture-ai/ui.py<br>
    ~/capture-ai/ai.py<br>
    ~/capture-ai/cli.py<br>
@@ -77,7 +86,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    ~/.config/scripts/screenprint.sh
 </details>
 <details>
-<summary>3. Download Packages</summary>
+<summary>4. Download Packages</summary>
 
    <details>
    <summary>Arch Packages</summary>
