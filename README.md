@@ -30,6 +30,9 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 ❌ Not just a chat app  
 ✅ A hybrid AI platform (chat + document editor + pipeline engine)
 
+[![Demo Video](https://github.com/user-attachments/assets/01382077-5d88-4c35-a341-59f5f559488f)](https://github.com/furk4ngg/capture-ai/{}/capture-ai.mp4)
+
+
 ## 🚀 Features
 - [x] Compatible with Linux(Arch,Debian/Ubuntu) devices
 - [x] Model management per chat
