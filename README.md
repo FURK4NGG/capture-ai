@@ -494,100 +494,100 @@ Supports AI-powered web search and current online information retrieval using Ta
 
    
 1. Chat yönetimi  
-   Chat oluşturma, değiştirme, silme, yeniden adlandırma, sabitleme/sabitten çıkarma. Chatler önce sabitlenenler, sonra son değiştirilme zamanına göre sıralanır.
+Chat oluşturma, değiştirme, silme, yeniden adlandırma, sabitleme/sabitten çıkarma. Chatler önce sabitlenenler, sonra son değiştirilme zamanına göre sıralanır.
 
 2. Yerel chat saklama  
-   Tüm chatler uygulamanın cache klasörü altında yerel olarak saklanır.
+Tüm chatler uygulamanın cache klasörü altında yerel olarak saklanır.
 
 3. Bölümlü chat yükleme  
-   Chatler lazy loading kullanır. İlk olarak sadece son 10 mesaj yüklenir, yukarı kaydırıldıkça eski mesajlar yüklenir.
+Chatler lazy loading kullanır. İlk olarak sadece son 10 mesaj yüklenir, yukarı kaydırıldıkça eski mesajlar yüklenir.
 
 4. Kalıcı yapılandırma  
-   Tema, modeller, sabit chatler, son chat, STT, RAG, renkler, local provider’lar ve dil ayarları tek bir config.json dosyasında tutulur.
+Tema, modeller, sabit chatler, son chat, STT, RAG, renkler, local provider’lar ve dil ayarları tek bir config.json dosyasında tutulur.
 
 5. Chat başına model yönetimi  
-   Her chat kendi aktif AI modeline sahip olabilir. En son seçilen modeller listenin en üstüne alınır.
+Her chat kendi aktif AI modeline sahip olabilir. En son seçilen modeller listenin en üstüne alınır.
 
 6. Online ve local model desteği  
-   OpenRouter modelleri ve Ollama gibi local API tabanlı modeller desteklenir.
+OpenRouter modelleri ve Ollama gibi local API tabanlı modeller desteklenir.
 
 7. Local provider ayarları  
-   Base URL, başlatma komutu, durdurma komutu, system prompt ve model parametreleri tanımlanabilir.
+Base URL, başlatma komutu, durdurma komutu, system prompt ve model parametreleri tanımlanabilir.
 
 8. Sidebar arayüzü  
-   Açılıp kapanabilen sidebar içinde ayrı Chat ve AI Model listeleri bulunur.
+Açılıp kapanabilen sidebar içinde ayrı Chat ve AI Model listeleri bulunur.
 
 9. Context modu geçişi  
-   Her chat Direct mode ve RAG mode arasında geçiş yapabilir.
+Her chat Direct mode ve RAG mode arasında geçiş yapabilir.
 
 10. Chat başına RAG sistemi  
-    Kısa süreli hafıza, özet hafıza, basit retrieval ve kod farkındalıklı context desteği vardır.
+Kısa süreli hafıza, özet hafıza, basit retrieval ve kod farkındalıklı context desteği vardır.
 
 11. Reference tree desteği  
-    Seçilen referanslar recursive olarak genişletilir, böylece context kaybı yaşanmaz.
+Seçilen referanslar recursive olarak genişletilir, böylece context kaybı yaşanmaz.
 
 12. Mesaj seçme modu  
-    Kullanıcı bir veya birden fazla mesaj seçebilir, temizleyebilir, kopyalayabilir, yeniden oluşturabilir veya referans olarak kullanabilir.
+Kullanıcı bir veya birden fazla mesaj seçebilir, temizleyebilir, kopyalayabilir, yeniden oluşturabilir veya referans olarak kullanabilir.
 
 13. Regenerate (yeniden oluşturma)  
-    Seçilen user veya bot mesajlarından yeniden üretim yapılır ve referans context korunur.
+Seçilen user veya bot mesajlarından yeniden üretim yapılır ve referans context korunur.
 
 14. Kopyalanabilir kod blokları  
-    Copy ile işaretlenen içerikler, kopyalama butonu olan kod blokları olarak gösterilir.
+Copy ile işaretlenen içerikler, kopyalama butonu olan kod blokları olarak gösterilir.
 
 15. Görsel üretimi ve yönetimi  
-    Görsel üretimi, önizleme, cache’lenmiş görseller ve image attachment desteği bulunur.
+Görsel üretimi, önizleme, cache’lenmiş görseller ve image attachment desteği bulunur.
 
 16. Doküman desteği  
-    PDF, DOCX, XLSX, TXT ve MD dosyaları oluşturma ve çıktı alma desteklenir. Üretilen dosyalar indirilebilir olarak sunulur.
+PDF, DOCX, XLSX, TXT ve MD dosyaları oluşturma ve çıktı alma desteklenir. Üretilen dosyalar indirilebilir olarak sunulur.
 
 17. PDF işleme  
-    PDF metin içeriyorsa text olarak gönderilir. Metin yoksa ilk sayfalar PNG’ye çevrilerek image_url olarak gönderilir.
+PDF metin içeriyorsa text olarak gönderilir. Metin yoksa ilk sayfalar PNG’ye çevrilerek image_url olarak gönderilir.
 
 18. Doküman düzenleme davranışı  
-    AI, izin verildiğinde dosyaları okuyabilir, analiz edebilir, özetleyebilir, yeniden yazabilir ve düzenlenmiş çıktı oluşturabilir.
+AI, izin verildiğinde dosyaları okuyabilir, analiz edebilir, özetleyebilir, yeniden yazabilir ve düzenlenmiş çıktı oluşturabilir.
 
 19. Dosya oluşturma protokolü  
-    DOCX, XLSX, PDF, TXT ve MD dosyaları AI çıktısından oluşturulabilir ve indirilebilir olarak sunulur.
+DOCX, XLSX, PDF, TXT ve MD dosyaları AI çıktısından oluşturulabilir ve indirilebilir olarak sunulur.
 
 20. XLSX desteği  
-    Yeni tablolar oluşturabilir ve mevcut XLSX dosyaları filtreleyebilir.
+Yeni tablolar oluşturabilir ve mevcut XLSX dosyaları filtreleyebilir.
 
 21. Drag & drop dosya ekleme  
-    Dosyalar ve görseller sürükle-bırak veya dosya seçici ile eklenebilir.
+Dosyalar ve görseller sürükle-bırak veya dosya seçici ile eklenebilir.
 
 22. Düzenlenebilir dosya izni  
-    Eklenen dosyalar editable olarak işaretlenebilir. AI sadece izin verildiğinde değişiklik yapar.
+Eklenen dosyalar editable olarak işaretlenebilir. AI sadece izin verildiğinde değişiklik yapar.
 
 23. Voice-to-text girişi  
-    Mikrofon ile kayıt ve online/local STT ile metne çevirme desteklenir.
+Mikrofon ile kayıt ve online/local STT ile metne çevirme desteklenir.
 
 24. Offline STT  
-    whisper.cpp kullanarak yerel ses tanıma yapılır.
+whisper.cpp kullanarak yerel ses tanıma yapılır.
 
 25. Online STT  
-    OpenRouter üzerinden ses modeli kullanılarak WAV verisi input_audio olarak gönderilir.
+OpenRouter üzerinden ses modeli kullanılarak WAV verisi input_audio olarak gönderilir.
 
 26. Token kullanım gösterimi  
-    Her mesaj için input, output ve toplam token kullanımı gösterilebilir.
+Her mesaj için input, output ve toplam token kullanımı gösterilebilir.
 
-27. Token maliyet hesaplamaV
-    Mesaj maliyeti, ayarlanabilir token fiyatına göre tahmin edilebilir.
+27. Token maliyet hesaplama  
+Mesaj maliyeti, ayarlanabilir token fiyatına göre tahmin edilebilir.
 
 28. Tema sistemi  
-    Dark/light tema ve özelleştirilebilir UI renkleri desteklenir.
+Dark/light tema ve özelleştirilebilir UI renkleri desteklenir.
 
 29. Dil sistemi  
-    Türkçe ve İngilizce gibi dış dil dosyaları desteklenir ve cache’lenerek performans artırılır.
+Türkçe ve İngilizce gibi dış dil dosyaları desteklenir ve cache’lenerek performans artırılır.
 
 30. Prompt chooser  
-    copyable, apply, PDF edit, file create, structured output ve code gibi prompt blokları açılıp kapatılabilir.
+copyable, apply, PDF edit, file create, structured output ve code gibi prompt blokları açılıp kapatılabilir.
 
 31. Terminal kontrolü  
-    STT ve bazı UI özellikleri hariç terminal üzerinden kullanım desteklenir.
+STT ve bazı UI özellikleri hariç terminal üzerinden kullanım desteklenir.
 
 32. Linux uyumluluğu  
-    Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
+Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
 
 33. Streaming yanıt sistemi  
 AI yanıtları gerçek zamanlı olarak akış halinde gösterilir. Asistan mesajı, tamamının oluşmasını beklemek yerine yazılırken kademeli olarak ekranda görünür.
