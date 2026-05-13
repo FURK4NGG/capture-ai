@@ -28,6 +28,8 @@ PDF → Extract → Transform → Rebuild → Download
 
 It supports both online models (OpenRouter) and local AI providers, giving full control over performance, privacy, and behavior.
 
+Everything in Capture AI is fully open-source and designed to be transparent, customizable, and user-controlled.
+
 Capture AI combines the flexibility of coding-focused AI tools with everyday AI workflows in a single application.
 
 
