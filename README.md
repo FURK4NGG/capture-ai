@@ -483,7 +483,7 @@ The system intelligently builds context using recent messages, summaries, code c
 Multiple chats can send AI requests simultaneously. Each chat processes, streams, and updates responses independently in real time.
 
 47. Integrated web search  
-Supports AI-powered web search and current online information retrieval using Tavily.
+Supports AI-powered web search and current online information retrieval using Tavily.  
 User -> AI -> if required(User Permission) -> Tavily -> AI -> User
 </details>
 
@@ -640,7 +640,8 @@ Sistem; son mesajlar, özetler, kod context’i ve ilgili hafıza parçalarını
 Birden fazla sohbet aynı anda AI isteği gönderebilir. Her sohbet, diğer sohbetleri engellemeden gerçek zamanlı olarak bağımsız şekilde işlenir, yayınlanır ve güncellenir.
 
 47. Entegre web arama  
-Tavily kullanarak AI destekli web araması ve güncel çevrimiçi bilgi erişimi sağlar.
+Tavily kullanarak AI destekli web araması ve güncel çevrimiçi bilgi erişimi sağlar.  
+Kullanıcı -> AI -> eğer gerekliyse(Kullanıcı İzni) -> Tavily -> AI -> Kullanıcı
 </details>
 
 ## 🔒 License  
