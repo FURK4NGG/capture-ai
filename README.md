@@ -1,5 +1,3 @@
-## capture-ai
-[![License](https://img.shields.io/github/license/playcanvas/supersplat)](https://github.com/playcanvas/supersplat/blob/main/LICENSE)
 <!-- ai-controller -->
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- ui ve cli icin proje resimleri -->
@@ -11,6 +9,9 @@ pdf_text_image → layout JSON + image PNG → AI text JSON / image output → a
 <!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
 
 ## 👀 capture-ai Overview
+
+[![License](https://img.shields.io/github/license/playcanvas/supersplat)](https://github.com/playcanvas/supersplat/blob/main/LICENSE)
+
 Capture AI is not just a simple chat application.
 
 It is a hybrid AI platform that combines:
