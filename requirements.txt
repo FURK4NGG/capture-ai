@@ -1,1 +1,7 @@
 requests
+pypdf
+PyMuPDF
+openpyxl
+python-docx
+reportlab
+Pillow
