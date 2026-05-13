@@ -12,9 +12,11 @@ Capture AI is not just a simple chat application.
 
 It is a hybrid AI platform that combines:
 
-💬 Conversational AI  
-📄 Document processing & editing  
-⚙️ Intelligent pipelines  
+💬 Conversational AI
+📄 Document processing & editing
+⚙️ Intelligent pipelines
+💻 Coding workflows
+🎨 Image generation & visual AI tasks  
 
 All in a single system.
 
@@ -25,6 +27,8 @@ From a single prompt, it can:
 PDF → Extract → Transform → Rebuild → Download
 
 It supports both online models (OpenRouter) and local AI providers, giving full control over performance, privacy, and behavior.
+
+Capture AI combines the flexibility of coding-focused AI tools with everyday AI workflows in a single application.
 
 ❌ Not just a chat app  
 ✅ A hybrid AI platform (chat + document editor + pipeline engine)
