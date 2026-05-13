@@ -229,7 +229,7 @@ Capture AI combines the flexibility of coding-focused AI tools with everyday AI 
    <br><br>
    🖥️ GTK4 UI Dependencies
    ```
-   sudo apt install -y python3-gi gobject-introspection gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
+   sudo apt install -y python3-gi python3-gi-cairo gobject-introspection gir1.2-gtk-4.0 gir1.2-adw-1 libgtk-4-1 libadwaita-1-0
    ```
    <br><br>
    🎨 Rendering & Graphics
@@ -308,7 +308,7 @@ Capture AI combines the flexibility of coding-focused AI tools with everyday AI 
    <br><br>
    🧰 System Utilities
    ```
-   sudo apt install -y xdg-utils fonts-noto-color-emoji
+   sudo apt install -y xdg-utils fonts-noto-color-emoji xdg-desktop-portal xdg-desktop-portal-gtk
    ```
    </details>
 
