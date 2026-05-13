@@ -1,11 +1,7 @@
 <!-- ai-controller -->
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
-<!-- ui ve cli icin proje resimleri -->
-<!-- ram tuketimi gibi bilgiler
-pdf_text → extract text → AI DOCX → app PDF
-pdf_image → image block varsa block kes → AI PNG → eski PDF üstüne yerleştir
-pdf_image + scan PDF → sayfa PNG → AI PNG → PDF’e çevir
-pdf_text_image → layout JSON + image PNG → AI text JSON / image output → app layout’u yeniden kurar-->
+<!-- cli icin resim -->
+<!-- ram tuketimi gibi bilgiler-->
 <!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
 
 ## 👀 capture-ai Overview
