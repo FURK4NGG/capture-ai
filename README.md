@@ -214,7 +214,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    🧩 Core System & Python
    ```
    sudo apt update
-   sudo apt install -y python3 python3-venv git
+   sudo apt install -y python3 python3-venv git poppler-utils libreoffice
    ```
    Environment
    ```
