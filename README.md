@@ -2,7 +2,7 @@
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- cli icin resim -->
 <!-- ram tuketimi gibi bilgiler-->
-<!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme -->
+<!-- hangi pdf sayfalari gidecek,thinking aninda siraya prompt koyma ve onun gozukmesi,biz chat1deyken chat2 den cevap gelirse kullaniciya gosterme,ses editleme -->
 
 ## 👀 capture-ai Overview
 
@@ -484,6 +484,7 @@ Multiple chats can send AI requests simultaneously. Each chat processes, streams
 
 47. Integrated web search  
 Supports AI-powered web search and current online information retrieval using Tavily.
+User -> AI -> if required(User Permission) -> Tavily -> AI -> User
 </details>
 
 <details>
