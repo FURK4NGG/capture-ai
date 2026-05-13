@@ -98,7 +98,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    ```
    🧩 Core System & Python
    ```
-   sudo pacman -S --needed python python-virtualenv git poppler libreoffice
+   sudo pacman -S --needed python python-virtualenv git
    ```
    Environment
    ```
@@ -124,7 +124,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    <br><br>
    📄 File Processing (DOCX / XLSX / PDF)
    ```
-   sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab ttf-dejavu
+   sudo pacman -S --needed python-pypdf python-pymupdf python-openpyxl python-reportlab poppler libreoffice ttf-dejavu
    yay -S python-docx
    ```
    <br><br>
@@ -214,7 +214,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    🧩 Core System & Python
    ```
    sudo apt update
-   sudo apt install -y python3 python3-venv git poppler-utils libreoffice
+   sudo apt install -y python3 python3-venv git
    ```
    Environment
    ```
@@ -240,7 +240,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    <br><br>
    📄 File Processing (DOCX / XLSX / PDF)
    ```
-   sudo apt install -y python3-pypdf python3-pymupdf python3-openpyxl python3-reportlab fonts-dejavu
+   sudo apt install -y python3-pypdf python3-pymupdf python3-openpyxl python3-reportlab poppler-utils libreoffice fonts-dejavu
    pip install python-docx
    ```
    or
