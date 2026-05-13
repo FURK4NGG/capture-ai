@@ -1,3 +1,5 @@
+## capture-ai
+[![License](https://img.shields.io/github/license/playcanvas/supersplat)](https://github.com/playcanvas/supersplat/blob/main/LICENSE)
 <!-- ai-controller -->
 <!-- kurulum dosyasi ve sudo chmod,dosyalari yerlestirme klasor olusturma ve izinler -->
 <!-- ui ve cli icin proje resimleri -->
