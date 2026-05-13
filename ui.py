@@ -141,6 +141,7 @@ def ensure_base_config(config: dict) -> dict:
 
     bool_keys = [
         "dark_mode",
+        "ask_for_web_search",
         "show_usage",
         "show_token_value",
         "force_ui_language",
