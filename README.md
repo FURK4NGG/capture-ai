@@ -51,6 +51,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [x] Image generation and image-based workflows
 - [x] Regenerate
 - [x] Modular prompt system (Prompt Chooser)
+- [x] Allows both online and local AI models to access current web search results using Tavily
 - [x] Enter input with your voice -Speech to text(online or local)-
 - [x] Copyable code blocks
 - [x] Control via Terminal (excluding STT and some UI features)
@@ -66,7 +67,6 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [x] Easy access with keyboard shortcuts
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
-- [x] Web Search (supports online and local models)
 - [ ] Compatible with macOS, Windows
 
 ## 📦 Setup
