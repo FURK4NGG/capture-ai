@@ -322,8 +322,9 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 ```
 bash capture-ai.sh (image,text,cli)  
 ```
-<br>
-## HYPRLAND.CONF
+
+
+## ------------------HYPRLAND.CONF------------------
 $capture-ai = /home/$USER/capture-ai/capture-ai.sh  
 
 bind = $mainMod SHIFT, Q, exec, $capture-ai image  
