@@ -33,7 +33,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 ❌ Not just a chat app  
 ✅ A hybrid AI platform (chat + document editor + pipeline engine)
 
-[![Demo Video]("https://github.com/user-attachments/assets/3ab93c85-b054-4e24-8cdf-a38905084496")](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai.mp4)
+[![Demo Video](https://github.com/user-attachments/assets/3ab93c85-b054-4e24-8cdf-a38905084496)](https://github.com/FURK4NGG/capture-ai/blob/main/{}/capture-ai.mp4)
 
 
 ## 🚀 Features
