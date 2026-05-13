@@ -98,7 +98,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    ```
    🧩 Core System & Python
    ```
-   sudo pacman -S --needed python python-virtualenv git
+   sudo pacman -S --needed python python-virtualenv git poppler libreoffice
    ```
    Environment
    ```
