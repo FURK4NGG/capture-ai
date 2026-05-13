@@ -482,10 +482,10 @@ Local AI providers can be automatically started or stopped using configured comm
 45. Chat-aware context building  
 The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.
 
-46. Real-time independent multi-chat streaming
+46. Real-time independent multi-chat streaming  
 Multiple chats can send AI requests simultaneously. Each chat processes, streams, and updates responses independently in real time.
 
-47. Integrated web search
+47. Integrated web search  
 Supports AI-powered web search and current online information retrieval using Tavily.
 </details>
 
