@@ -324,7 +324,7 @@ bash capture-ai.sh (image,text,cli)
 ```
 
 
-## ------------------HYPRLAND.CONF------------------
+## ------------------HYPRLAND.CONF------------------>
 $capture-ai = /home/$USER/capture-ai/capture-ai.sh  
 
 bind = $mainMod SHIFT, Q, exec, $capture-ai image  
