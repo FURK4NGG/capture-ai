@@ -480,7 +480,13 @@ System prompts are divided into selectable blocks, allowing dynamic control over
 Local AI providers can be automatically started or stopped using configured commands.
 
 45. Chat-aware context building  
-The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.               
+The system intelligently builds context using recent messages, summaries, code context, and relevant memory chunks.
+
+46. Real-time independent multi-chat streaming
+Multiple chats can send AI requests simultaneously. Each chat processes, streams, and updates responses independently in real time.
+
+47. Integrated web search
+Supports AI-powered web search and current online information retrieval using Tavily.
 </details>
 
 <details>
@@ -631,6 +637,12 @@ Yerel AI sağlayıcıları, tanımlı komutlar ile otomatik olarak başlatılabi
 
 45. Sohbet farkındalıklı context oluşturma
 Sistem; son mesajlar, özetler, kod context’i ve ilgili hafıza parçalarını kullanarak akıllı bir context oluşturur.
+
+46. Gerçek zamanlı bağımsız çoklu sohbet akışı
+Birden fazla sohbet aynı anda AI isteği gönderebilir. Her sohbet, diğer sohbetleri engellemeden gerçek zamanlı olarak bağımsız şekilde işlenir, yayınlanır ve güncellenir.
+
+47. Entegre web arama
+Tavily kullanarak AI destekli web araması ve güncel çevrimiçi bilgi erişimi sağlar.
 </details>
 
 ## 🔒 License  
