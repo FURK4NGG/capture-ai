@@ -56,22 +56,7 @@
     "include_recent_attachments": false
   },
   "chat_rag_switch": {
-    "default.json": true,
-    "dosya.json": false,
-    "hatalar.json": true,
-    "chat_9.json": true,
-    "ses.json": true,
-    "chat_11.json": false,
-    "chat_10.json": false,
-    "resim.json": true,
-    "gpt5.json": false,
-    "Welcome.json": false,
-    "chat_13.json": true,
-    "chat_14.json": true,
-    "chat_6.json": true,
-    "chat_15.json": true,
-    "chat_16.json": true,
-    "onemli.json": true
+    "Welcome.json": false
   },
   "ai_models": [
     {
