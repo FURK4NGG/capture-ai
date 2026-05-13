@@ -64,6 +64,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [x] Language support [Turkish, English]*You can easily create your own language file*
 - [x] Caching the language file to avoid repeated file reads
 - [ ] Compatible with macOS, Windows
+- [ ] Audio Editing
 
 ## 📦 Setup
 1. `Go to the`[`Open Router`](https://openrouter.ai/)`and create your own api key`
