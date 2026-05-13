@@ -73,8 +73,8 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 2. `Go to the`[`Tavily`](https://app.tavily.com/home)`and create your own api key`
 <details>
 <summary>?</summary>
-      OpenRouter: Provides access to online AI models through a single API.<br>
-      Tavily: Provides web search results and current online information for AI models.
+      OpenRouter: Provides access to online AI models through a single API.*Some models may require paid usage depending on the provider.*<br>
+      Tavily: Provides web search results and current online information for AI models.*The free plan includes up to 1000 searches per month in basic search mode.*
 </details>
 
 <details>
