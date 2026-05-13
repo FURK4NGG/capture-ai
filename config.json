@@ -70,7 +70,7 @@
   ],
   "chat_models": {
     "Welcome.json": {
-      "id": "google/gemini-2.5-flash",
+      "id": "openai/gpt-5",
       "local": false
     }
   },
