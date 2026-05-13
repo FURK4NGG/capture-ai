@@ -55,6 +55,7 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
 - [x] Copyable code blocks
 - [x] Control via Terminal (excluding STT and some UI features)
 - [x] Customize how the AI responds
+- [x] Real-time independent multi-chat requests and streaming
 - [x] Adding documents via drag & drop
 - [x] Lazy Loading, Chat Loading System (Loads latest messages first,older messages load on scroll)
 - [x] Change UI colors
