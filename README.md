@@ -238,17 +238,12 @@ It supports both online models (OpenRouter) and local AI providers, giving full 
    <br><br>
    🌐 Network & Runtime
    ```
-   sudo apt install -y python3-requests wget
+   sudo apt install -y wget
    ```
    <br><br>
    📄 File Processing (DOCX / XLSX / PDF)
    ```
-   sudo apt install -y python3-pypdf python3-pymupdf python3-openpyxl python3-reportlab poppler-utils libreoffice fonts-dejavu
-   pip install python-docx
-   ```
-   or
-   ```
-   sudo apt install -y python3-docx
+   sudo apt install -y poppler-utils libreoffice fonts-dejavu
    ```
    <br><br>
    🎧 Audio / Voice  
