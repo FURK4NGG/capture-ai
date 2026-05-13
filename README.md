@@ -10,7 +10,7 @@ pdf_text_image → layout JSON + image PNG → AI text JSON / image output → a
 
 ## 👀 capture-ai Overview
 
-[![License](https://img.shields.io/github/license/playcanvas/supersplat)](https://github.com/FURK4NGG/capture-ai/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/FURK4NGG/capture-ai)](https://github.com/FURK4NGG/capture-ai/blob/main/LICENSE)
 
 Capture AI is not just a simple chat application.
 
