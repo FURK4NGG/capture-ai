@@ -308,7 +308,7 @@ Capture AI combines the flexibility of coding-focused AI tools with everyday AI 
    <br><br>
    🧰 System Utilities
    ```
-   sudo apt install -y xdg-utils fonts-noto-color-emoji xdg-desktop-portal xdg-desktop-portal-gtk
+   sudo apt install -y xdg-utils xdg-desktop-portal xdg-desktop-portal-gtk fonts-noto-color-emoji
    ```
    </details>
 
