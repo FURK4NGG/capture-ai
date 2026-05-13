@@ -493,106 +493,106 @@ Supports AI-powered web search and current online information retrieval using Ta
 <summary>Bilgi Hastaları için</summary>
 
    
-1. Chat yönetimi
+1. Chat yönetimi  
    Chat oluşturma, değiştirme, silme, yeniden adlandırma, sabitleme/sabitten çıkarma. Chatler önce sabitlenenler, sonra son değiştirilme zamanına göre sıralanır.
 
-2. Yerel chat saklama
+2. Yerel chat saklama  
    Tüm chatler uygulamanın cache klasörü altında yerel olarak saklanır.
 
-3. Bölümlü chat yükleme
+3. Bölümlü chat yükleme  
    Chatler lazy loading kullanır. İlk olarak sadece son 10 mesaj yüklenir, yukarı kaydırıldıkça eski mesajlar yüklenir.
 
-4. Kalıcı yapılandırma
+4. Kalıcı yapılandırma  
    Tema, modeller, sabit chatler, son chat, STT, RAG, renkler, local provider’lar ve dil ayarları tek bir config.json dosyasında tutulur.
 
-5. Chat başına model yönetimi
+5. Chat başına model yönetimi  
    Her chat kendi aktif AI modeline sahip olabilir. En son seçilen modeller listenin en üstüne alınır.
 
-6. Online ve local model desteği
+6. Online ve local model desteği  
    OpenRouter modelleri ve Ollama gibi local API tabanlı modeller desteklenir.
 
-7. Local provider ayarları
+7. Local provider ayarları  
    Base URL, başlatma komutu, durdurma komutu, system prompt ve model parametreleri tanımlanabilir.
 
-8. Sidebar arayüzü
+8. Sidebar arayüzü  
    Açılıp kapanabilen sidebar içinde ayrı Chat ve AI Model listeleri bulunur.
 
-9. Context modu geçişi
+9. Context modu geçişi  
    Her chat Direct mode ve RAG mode arasında geçiş yapabilir.
 
-10. Chat başına RAG sistemi
+10. Chat başına RAG sistemi  
     Kısa süreli hafıza, özet hafıza, basit retrieval ve kod farkındalıklı context desteği vardır.
 
-11. Reference tree desteği
+11. Reference tree desteği  
     Seçilen referanslar recursive olarak genişletilir, böylece context kaybı yaşanmaz.
 
-12. Mesaj seçme modu
+12. Mesaj seçme modu  
     Kullanıcı bir veya birden fazla mesaj seçebilir, temizleyebilir, kopyalayabilir, yeniden oluşturabilir veya referans olarak kullanabilir.
 
-13. Regenerate (yeniden oluşturma)
+13. Regenerate (yeniden oluşturma)  
     Seçilen user veya bot mesajlarından yeniden üretim yapılır ve referans context korunur.
 
-14. Kopyalanabilir kod blokları
+14. Kopyalanabilir kod blokları  
     Copy ile işaretlenen içerikler, kopyalama butonu olan kod blokları olarak gösterilir.
 
-15. Görsel üretimi ve yönetimi
+15. Görsel üretimi ve yönetimi  
     Görsel üretimi, önizleme, cache’lenmiş görseller ve image attachment desteği bulunur.
 
-16. Doküman desteği
+16. Doküman desteği  
     PDF, DOCX, XLSX, TXT ve MD dosyaları oluşturma ve çıktı alma desteklenir. Üretilen dosyalar indirilebilir olarak sunulur.
 
-17. PDF işleme
+17. PDF işleme  
     PDF metin içeriyorsa text olarak gönderilir. Metin yoksa ilk sayfalar PNG’ye çevrilerek image_url olarak gönderilir.
 
-18. Doküman düzenleme davranışı
+18. Doküman düzenleme davranışı  
     AI, izin verildiğinde dosyaları okuyabilir, analiz edebilir, özetleyebilir, yeniden yazabilir ve düzenlenmiş çıktı oluşturabilir.
 
-19. Dosya oluşturma protokolü
+19. Dosya oluşturma protokolü  
     DOCX, XLSX, PDF, TXT ve MD dosyaları AI çıktısından oluşturulabilir ve indirilebilir olarak sunulur.
 
-20. XLSX desteği
+20. XLSX desteği  
     Yeni tablolar oluşturabilir ve mevcut XLSX dosyaları filtreleyebilir.
 
-21. Drag & drop dosya ekleme
+21. Drag & drop dosya ekleme  
     Dosyalar ve görseller sürükle-bırak veya dosya seçici ile eklenebilir.
 
-22. Düzenlenebilir dosya izni
+22. Düzenlenebilir dosya izni  
     Eklenen dosyalar editable olarak işaretlenebilir. AI sadece izin verildiğinde değişiklik yapar.
 
-23. Voice-to-text girişi
+23. Voice-to-text girişi  
     Mikrofon ile kayıt ve online/local STT ile metne çevirme desteklenir.
 
-24. Offline STT
+24. Offline STT  
     whisper.cpp kullanarak yerel ses tanıma yapılır.
 
-25. Online STT
+25. Online STT  
     OpenRouter üzerinden ses modeli kullanılarak WAV verisi input_audio olarak gönderilir.
 
-26. Token kullanım gösterimi
+26. Token kullanım gösterimi  
     Her mesaj için input, output ve toplam token kullanımı gösterilebilir.
 
-27. Token maliyet hesaplama
+27. Token maliyet hesaplamaV
     Mesaj maliyeti, ayarlanabilir token fiyatına göre tahmin edilebilir.
 
-28. Tema sistemi
+28. Tema sistemi  
     Dark/light tema ve özelleştirilebilir UI renkleri desteklenir.
 
-29. Dil sistemi
+29. Dil sistemi  
     Türkçe ve İngilizce gibi dış dil dosyaları desteklenir ve cache’lenerek performans artırılır.
 
-30. Prompt chooser
+30. Prompt chooser  
     copyable, apply, PDF edit, file create, structured output ve code gibi prompt blokları açılıp kapatılabilir.
 
-31. Terminal kontrolü
+31. Terminal kontrolü  
     STT ve bazı UI özellikleri hariç terminal üzerinden kullanım desteklenir.
 
-32. Linux uyumluluğu
+32. Linux uyumluluğu  
     Arch ve Debian/Ubuntu dahil Linux sistemler için tasarlanmıştır.
 
-33. Streaming yanıt sistemi
+33. Streaming yanıt sistemi  
 AI yanıtları gerçek zamanlı olarak akış halinde gösterilir. Asistan mesajı, tamamının oluşmasını beklemek yerine yazılırken kademeli olarak ekranda görünür.
 
-34. Gelişmiş PDF işleme pipeline’ı
+34. Gelişmiş PDF işleme pipeline’ı  
 pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX’i tekrar PDF’e çevirir
 
       pdf_image → PDF Image modu seçiliyse sayfalar PNG’ye çevrilir → AI görseli analiz eder veya PNG döndürür
@@ -605,43 +605,43 @@ pdf_text → PDF’ten metin çıkarılır → AI DOCX üretir → uygulama DOCX
       → AI text_replacements JSON (ve opsiyonel görseller) döndürür
       → uygulama orijinal layout’u kullanarak PDF’i yeniden oluşturur
 
-35. Üretilen dosya sistemi
+35. Üretilen dosya sistemi  
 AI tarafından oluşturulan dosyalar (PDF, DOCX, XLSX vb.) otomatik olarak uygulama cache dizinine kaydedilir ve sohbet içinde indirme butonlarıyla gösterilir.
 
-36. Yapılandırılmış dosya üretim protokolü
+36. Yapılandırılmış dosya üretim protokolü  
 AI yanıtları, manuel parse gerektirmeden doğrudan dosya üretimini sağlayan yapılandırılmış file_create blokları içerebilir.
 
-37. Düzenlenebilir dosya güvenlik sistemi
+37. Düzenlenebilir dosya güvenlik sistemi  
 Dosyalar düzenlenebilir veya salt okunur olarak işaretlenebilir. Açık izin verilmeden AI’ın dosyaları değiştirmesi kesin olarak engellenir.
 
-38. Akıllı PDF türü tespiti
+38. Akıllı PDF türü tespiti  
 PDF’in metin tabanlı, görsel tabanlı veya karışık olup olmadığı otomatik olarak tespit edilir ve uygun işleme pipeline’ı uygulanır.
 
-39. Karışık PDF layout yeniden oluşturma
+39. Karışık PDF layout yeniden oluşturma  
 Hem metin hem görsel içeren PDF’lerde, layout yapısı çıkarılır ve AI düzenlemelerinden sonra belge yeniden oluşturulur.
 
-40. Görselden PDF’e otomatik dönüşüm
+40. Görselden PDF’e otomatik dönüşüm  
 AI görsel (örneğin PNG) çıktısı verdiğinde, uygulama bunu otomatik olarak PDF formatına dönüştürür.
 
-41. Üretilen görsel cache sistemi
+41. Üretilen görsel cache sistemi  
 Oluşturulan tüm görseller yerel olarak cache’lenir ve tekrar üretmeye gerek kalmadan yeniden kullanılabilir.
 
-42. AI tarafından dönen dosya işleme sistemi
+42. AI tarafından dönen dosya işleme sistemi  
 Base64 veya URL olarak dönen dosyalar desteklenir ve otomatik olarak indirilebilir dosyalara dönüştürülür.
 
-43. Modüler prompt sistemi
+43. Modüler prompt sistemi  
 Sistem prompt’ları bloklara ayrılmıştır ve dinamik olarak açılıp kapatılarak AI davranışı kontrol edilebilir.
 
-44. Local provider başlatma otomasyonu
+44. Local provider başlatma otomasyonu  
 Yerel AI sağlayıcıları, tanımlı komutlar ile otomatik olarak başlatılabilir veya durdurulabilir.
 
-45. Sohbet farkındalıklı context oluşturma
+45. Sohbet farkındalıklı context oluşturma  
 Sistem; son mesajlar, özetler, kod context’i ve ilgili hafıza parçalarını kullanarak akıllı bir context oluşturur.
 
-46. Gerçek zamanlı bağımsız çoklu sohbet akışı
+46. Gerçek zamanlı bağımsız çoklu sohbet akışı  
 Birden fazla sohbet aynı anda AI isteği gönderebilir. Her sohbet, diğer sohbetleri engellemeden gerçek zamanlı olarak bağımsız şekilde işlenir, yayınlanır ve güncellenir.
 
-47. Entegre web arama
+47. Entegre web arama  
 Tavily kullanarak AI destekli web araması ve güncel çevrimiçi bilgi erişimi sağlar.
 </details>
 
