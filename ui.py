@@ -2291,8 +2291,9 @@ class ChatApp(Gtk.Application):
         # Debian/Ubuntu/Raspberry tarafında daha stabil fallback
         return self.is_debian_like()
 
-
-    def open_files_dialog_portable(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
+    def open_files_dialog_portable(self, title=None, image_only=False, multiple=True, callback=None):
+        if title is None:
+            title = self("o_Select_File")
         """
         callback(paths: list[str]) çağrılır
         """
@@ -2304,7 +2305,9 @@ class ChatApp(Gtk.Application):
             self._open_files_dialog_modern(title=title, image_only=image_only, multiple=multiple, callback=callback)
 
 
-    def open_single_file_dialog_portable(self, title="Dosya Seç", image_only=False, callback=None):
+    def open_single_file_dialog_portable(self, title=None, image_only=False, callback=None):
+        if title is None:
+            title = self("o_Select_File")
         """
         callback(path: str | None) çağrılır
         """
@@ -2334,8 +2337,9 @@ class ChatApp(Gtk.Application):
             return [img_filter]
         return [img_filter, any_filter]
 
-
-    def _open_files_dialog_modern(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
+    def _open_files_dialog_modern(self, title=None, image_only=False, multiple=True, callback=None):
+        if title is None:
+            title = self("o_Select_File")
         callback = callback or (lambda paths: None)
 
         dialog = Gtk.FileDialog()
@@ -2383,8 +2387,9 @@ class ChatApp(Gtk.Application):
 
             dialog.open(self.win, None, on_done)
 
-
-    def _open_single_file_dialog_modern(self, title="Dosya Seç", image_only=False, callback=None):
+    def _open_single_file_dialog_modern(self, title=None, image_only=False, callback=None):
+        if title is None:
+            title = self("o_Select_File")
         callback = callback or (lambda path: None)
 
         def _cb(paths):
@@ -2392,7 +2397,9 @@ class ChatApp(Gtk.Application):
 
         self._open_files_dialog_modern(title=title, image_only=image_only, multiple=False, callback=_cb)
 
-    def _open_files_dialog_native(self, title="Dosya Seç", image_only=False, multiple=True, callback=None):
+    def _open_files_dialog_native(self, title=None, image_only=False, multiple=True, callback=None):
+        if title is None:
+            title = self("o_Select_File")
         callback = callback or (lambda paths: None)
 
         dialog = Gtk.FileChooserDialog(
@@ -2440,7 +2447,9 @@ class ChatApp(Gtk.Application):
         dialog.connect("response", on_response)
         dialog.present()
 
-    def _open_single_file_dialog_native(self, title="Dosya Seç", image_only=False, callback=None):
+    def _open_single_file_dialog_native(self, title=None, image_only=False, callback=None):
+        if title is None:
+            title = self("o_Select_File")
         callback = callback or (lambda path: None)
 
         def _cb(paths):
@@ -3516,7 +3525,7 @@ class ChatApp(Gtk.Application):
         entry.set_placeholder_text("provider/model (exp: openai/gpt-4.1-mini)")
         content.append(entry)
 
-        local_check = Gtk.CheckButton(label="Local model")
+        local_check = Gtk.CheckButton(label=self("o_Local_Model"))
         content.append(local_check)
 
         # Ctrl+V ile yapıştırmayı garanti et
@@ -3872,6 +3881,80 @@ class ChatApp(Gtk.Application):
         except Exception:
             pass
 
+    # --- CTRL C,V,X,A ---
+
+    def add_entry_clipboard_shortcuts(self, entry_widget, dialog=None):
+        key_controller = Gtk.EventControllerKey()
+        key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+
+        def on_key_pressed(_controller, keyval, _keycode, state):
+            ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
+            if ctrl:
+                display = Gdk.Display.get_default()
+                if not display:
+                    return False
+
+                clipboard = display.get_clipboard()
+
+                if keyval in (Gdk.KEY_a, Gdk.KEY_A):
+                    entry_widget.grab_focus()
+                    entry_widget.select_region(0, -1)
+                    return True
+
+                if keyval in (Gdk.KEY_c, Gdk.KEY_C):
+                    text = entry_widget.get_text() or ""
+                    sel = entry_widget.get_selection_bounds()
+                    if sel:
+                        s, e = sel
+                        clipboard.set(text[s:e])
+                    return True
+
+                if keyval in (Gdk.KEY_x, Gdk.KEY_X):
+                    text = entry_widget.get_text() or ""
+                    sel = entry_widget.get_selection_bounds()
+
+                    if sel:
+                        s, e = sel
+                        clipboard.set(text[s:e])
+                        entry_widget.delete_text(s, e)
+                    else:
+                        clipboard.set(text)
+                        entry_widget.set_text("")
+
+                    return True
+
+                if keyval in (Gdk.KEY_v, Gdk.KEY_V):
+                    def on_text(cb, res):
+                        try:
+                            text = cb.read_text_finish(res) or ""
+                        except Exception:
+                            text = ""
+
+                        if not text:
+                            return
+
+                        sel = entry_widget.get_selection_bounds()
+                        if sel:
+                            s, e = sel
+                            entry_widget.delete_text(s, e)
+
+                        pos = entry_widget.get_position()
+                        entry_widget.insert_text(text, pos)
+                        entry_widget.set_position(pos + len(text))
+
+                    clipboard.read_text_async(None, on_text)
+                    return True
+
+            if dialog and keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+                dialog.response(Gtk.ResponseType.OK)
+                return True
+
+            return False
+
+        key_controller.connect("key-pressed", on_key_pressed)
+        entry_widget.add_controller(key_controller)
+
 
     def bind_i18n(self, widget, field: str, key: str):
         """
@@ -4036,6 +4119,7 @@ class ChatApp(Gtk.Application):
         stt_model_entry.set_placeholder_text("openai/gpt-audio-mini")
         stt_model_entry.set_text(str(cfg["stt_model_online"]))
         content.append(stt_model_entry)
+        self.add_entry_clipboard_shortcuts(stt_model_entry)
 
         # --- whisper.cpp binary ---
         whisper_bin_label = Gtk.Label(label=f"whisper.cpp {self('o_Binary_Path')}")
@@ -4046,6 +4130,7 @@ class ChatApp(Gtk.Application):
         whisper_bin_entry.set_placeholder_text("/home/usr/whisper.cpp/build/bin/whisper-cli")
         whisper_bin_entry.set_text(str(cfg["whisper_cpp_bin"]))
         content.append(whisper_bin_entry)
+        self.add_entry_clipboard_shortcuts(whisper_bin_entry)
 
         # --- whisper.cpp model ---
         whisper_model_label = Gtk.Label(label=f"whisper.cpp {self('o_Model_Path')}")
@@ -4056,6 +4141,7 @@ class ChatApp(Gtk.Application):
         whisper_model_entry.set_placeholder_text("/home/usr/.local/share/whisper/ggml-tiny.bin")
         whisper_model_entry.set_text(str(cfg["whisper_cpp_model"]))
         content.append(whisper_model_entry)
+        self.add_entry_clipboard_shortcuts(whisper_model_entry)
 
         # Link
         link = Gtk.LinkButton.new_with_label(
@@ -4351,6 +4437,7 @@ class ChatApp(Gtk.Application):
         local_provider_name_entry.set_text(selected_provider_name)
         local_provider_name_entry.set_placeholder_text("ollama")
         content.append(local_provider_name_entry)
+        self.add_entry_clipboard_shortcuts(local_provider_name_entry)
 
         row_local_enabled = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
@@ -4389,6 +4476,7 @@ class ChatApp(Gtk.Application):
         local_base_url_entry.set_text(str(local_cfg.get("base_url", "")))
         local_base_url_entry.set_placeholder_text("http://127.0.0.1:11434")
         content.append(local_base_url_entry)
+        self.add_entry_clipboard_shortcuts(local_base_url_entry)
 
         local_run_startup_label = Gtk.Label()
         self.bind_i18n(local_run_startup_label, "label", "o_Run_Startup")
@@ -4399,15 +4487,18 @@ class ChatApp(Gtk.Application):
         local_run_startup_entry.set_text(str(local_cfg.get("run_startup", "")))
         self.bind_i18n(local_run_startup_entry, "placeholder", "o_Run_Startup_Placeholder")
         content.append(local_run_startup_entry)
+        self.add_entry_clipboard_shortcuts(local_run_startup_entry)
 
         local_stop_command_label = Gtk.Label()
         self.bind_i18n(local_stop_command_label, "label", "o_Stop_Command")
         local_stop_command_label.set_xalign(0)
         content.append(local_stop_command_label)
+
         local_stop_command_entry = Gtk.Entry()
         local_stop_command_entry.set_text(str(local_cfg.get("stop_command", "")))
         self.bind_i18n(local_stop_command_entry, "placeholder", "o_Stop_Command_Placeholder")
         content.append(local_stop_command_entry)
+        self.add_entry_clipboard_shortcuts(local_stop_command_entry)
 
         local_system_error_label = Gtk.Label()
         self.bind_i18n(local_system_error_label, "label", "o_Custom_Error")
@@ -4418,6 +4509,7 @@ class ChatApp(Gtk.Application):
         local_system_error_entry.set_text(str(local_cfg.get("system_error", "")))
         self.bind_i18n(local_system_error_entry, "placeholder", "o_Custom_Error_Placeholder")
         content.append(local_system_error_entry)
+        self.add_entry_clipboard_shortcuts(local_system_error_entry)
 
         def add_local_param_row(title_text, key, placeholder=""):
             lab = Gtk.Label(label=title_text)
@@ -4425,6 +4517,7 @@ class ChatApp(Gtk.Application):
             content.append(lab)
 
             entry = Gtk.Entry()
+            self.add_entry_clipboard_shortcuts(entry)
             entry.set_text(str(local_cfg.get(key, "")))
             if placeholder:
                 entry.set_placeholder_text(placeholder)
@@ -4922,6 +5015,7 @@ class ChatApp(Gtk.Application):
             entry = Gtk.Entry()
             entry.set_text(colors[key])
             entry.set_placeholder_text("#rrggbb")
+            self.add_entry_clipboard_shortcuts(entry)
 
             row.append(lab)
             row.append(entry)
@@ -5019,6 +5113,7 @@ class ChatApp(Gtk.Application):
         token_value_entry.set_width_chars(8)
         token_value_entry.set_max_width_chars(10)
         token_value_entry.set_halign(Gtk.Align.END)
+        self.add_entry_clipboard_shortcuts(token_value_entry)
 
         row_token_value.append(token_value_left)
         row_token_value.append(token_value_entry)
@@ -5049,6 +5144,7 @@ class ChatApp(Gtk.Application):
         bg_path_entry.set_hexpand(True)
         self.bind_i18n(bg_path_entry, "placeholder", "o_Background_Path_Placeholder")
         bg_path_entry.set_text(self._get_chat_bg_image_path())
+        self.add_entry_clipboard_shortcuts(bg_path_entry)
 
         bg_pick_btn = Gtk.Button(label=f"{self('o_Select_Image')}")
         bg_clear_btn = Gtk.Button(label=f"{self('o_Clear')}")
@@ -5145,6 +5241,7 @@ class ChatApp(Gtk.Application):
 
 
         entry = Gtk.Entry()
+        self.add_entry_clipboard_shortcuts(entry, dialog)
         self.bind_i18n(entry, "placeholder", "o_Response_Style_Placeholder")
 
         cfg = ensure_base_config(self.load_config())
@@ -5158,79 +5255,6 @@ class ChatApp(Gtk.Application):
 
         # Enter → Kaydet
         entry.connect("activate", lambda *_: dialog.response(Gtk.ResponseType.OK))
-
-        key_controller = Gtk.EventControllerKey()
-
-        def on_key_pressed(_controller, keyval, _keycode, state):
-
-            ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
-
-            display = Gdk.Display.get_default()
-            clipboard = display.get_clipboard() if display else None
-
-            # Ctrl+A → Hepsini seç
-            if ctrl and keyval in (Gdk.KEY_a, Gdk.KEY_A):
-                entry.select_region(0, -1)
-                return True
-
-            # Ctrl+V → Yapıştır
-            if ctrl and keyval in (Gdk.KEY_v, Gdk.KEY_V):
-                if not clipboard:
-                    return False
-
-                def on_text(cb, res):
-                    try:
-                        text = cb.read_text_finish(res) or ""
-                    except Exception:
-                        text = ""
-
-                    if not text:
-                        return
-
-                    sel = entry.get_selection_bounds()
-                    if sel:
-                        s, e = sel
-                        entry.delete_text(s, e)
-
-                    pos = entry.get_position()
-                    entry.insert_text(text, pos)
-                    entry.set_position(pos + len(text))
-
-                clipboard.read_text_async(None, on_text)
-                return True
-
-            # Ctrl+X → Kes
-            if ctrl and keyval in (Gdk.KEY_x, Gdk.KEY_X):
-
-                if not clipboard:
-                    return True
-
-                text = entry.get_text() or ""
-                if not text:
-                    return True
-
-                sel = entry.get_selection_bounds()
-
-                if sel:
-                    s, e = sel
-                    cut = text[s:e]
-                    clipboard.set(cut)
-                    entry.delete_text(s, e)
-                else:
-                    clipboard.set(text)
-                    entry.set_text("")
-
-                return True
-
-            # Enter → Kaydet
-            if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
-                dialog.response(Gtk.ResponseType.OK)
-                return True
-
-            return False
-
-        key_controller.connect("key-pressed", on_key_pressed)
-        entry.add_controller(key_controller)
 
         def on_response(d, resp):
             if resp == Gtk.ResponseType.OK:
@@ -5294,11 +5318,11 @@ class ChatApp(Gtk.Application):
         tavily_entry.set_text(str(cfg.get("tavily_api_key", "")))
         content.append(tavily_entry)
 
-        # Ctrl+V ile yapıştırmayı garanti et
-        key_controller = Gtk.EventControllerKey()
-
         dialog.add_button(self("o_Cancel"), Gtk.ResponseType.CANCEL)
         dialog.add_button(self("o_Save"), Gtk.ResponseType.OK)
+
+        self.add_entry_clipboard_shortcuts(openrouter_entry, dialog)
+        self.add_entry_clipboard_shortcuts(tavily_entry, dialog)
 
         def on_response(dialog, response):
             if response == Gtk.ResponseType.OK:
@@ -5313,34 +5337,6 @@ class ChatApp(Gtk.Application):
 
         dialog.connect("response", on_response)
         dialog.present()
-
-        def on_key_pressed(controller, keyval, keycode, state):
-            ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
-
-            # hem v hem V yakala
-            if ctrl and keyval in (Gdk.KEY_v, Gdk.KEY_V):
-                display = Gdk.Display.get_default()
-                if not display:
-                    return False
-
-                clipboard = display.get_clipboard()
-
-                def on_text(cb, res):
-                    try:
-                        text = cb.read_text_finish(res) or ""
-                    except Exception:
-                        text = ""
-                    if text:
-                        entry.set_text(text.strip())
-
-                clipboard.read_text_async(None, on_text)
-                return True
-
-            return False
-
-        key_controller.connect("key-pressed", on_key_pressed)
-        entry.add_controller(key_controller)
-
 
     def open_settings_menu(self, button):
         pop = Gtk.Popover()
@@ -7807,7 +7803,11 @@ class ChatApp(Gtk.Application):
         query = str(req.get("query") or "").strip()
 
         if not query:
-            self._set_web_search_status(msg_index, "error", "Empty search query.")
+            self._set_web_search_status(
+                msg_index,
+                "error",
+                self("o_Empty_Search_Query")
+            )
             self.load_chat()
             return
 
@@ -8537,7 +8537,7 @@ class ChatApp(Gtk.Application):
 
                 GLib.idle_add(
                     self.handle_ai_error,
-                    stderr_text or "AI process failed.",
+                    stderr_text or self("o_AI_Process_Failed"),
                     chat_path_for_ai
                 )
                 return

@@ -160,11 +160,19 @@ def get_ui_text(cfg: dict, key: str, **kwargs) -> str:
 def _tavily_search(cfg: dict, query: str, max_results: int = 5) -> str:
     api_key = str(cfg.get("tavily_api_key") or "").strip()
     if not api_key:
-        return "[WEB_SEARCH_ERROR]\nTavily API key is missing.\n[/WEB_SEARCH_ERROR]"
+        return (
+            "[WEB_SEARCH_ERROR]\n"
+            f"{get_ui_text(cfg, 'o_Tavily_API_Key_Missing')}\n"
+            "[/WEB_SEARCH_ERROR]"
+        )
 
     query = str(query or "").strip()
     if not query:
-        return "[WEB_SEARCH_ERROR]\nEmpty search query.\n[/WEB_SEARCH_ERROR]"
+        return (
+            "[WEB_SEARCH_ERROR]\n"
+            f"{get_ui_text(cfg, 'o_Empty_Search_Query')}\n"
+            "[/WEB_SEARCH_ERROR]"
+        )
 
     try:
         r = requests.post(
@@ -271,7 +279,7 @@ def _safe_read_text(path: Path, max_bytes: int = 250_000) -> str:
             data = data[:max_bytes]
         return data.decode("utf-8", errors="replace")
     except Exception as e:
-        return f"[Dosya okunamadı: {e}]"
+        return f"[File could not be read: {e}]"
 
 def _safe_read_pdf(path: Path, max_chars: int = 50000) -> str:
     try:
@@ -296,39 +304,35 @@ def _looks_like_empty_pdf_text(text: str) -> bool:
     return len(t) < 80
 
 def _user_wants_image_edit(text: str) -> bool:
-    t = str(text or "").lower()
+    """
+    Legacy auto-detection helper.
 
-    image_words = [
-        "image", "picture", "photo", "graphic", "diagram", "visual",
-        "resim", "görsel", "gorsel", "fotoğraf", "fotograf",
-        "şekil", "sekil", "grafik", "diyagram"
-    ]
+    Şu an bilinçli olarak kullanılmıyor.
+    PDF kararları Prompt Chooser üzerinden veriliyor:
+    - pdf_text
+    - pdf_image
+    - pdf_text_image
 
-    edit_words = [
-        "change", "replace", "modify", "edit", "remove", "add",
-        "değiştir", "degistir", "düzenle", "duzenle",
-        "kaldır", "kaldir", "ekle", "yenile"
-    ]
+    PNG/JPG/WebP gibi normal görsellerde de model zaten görseli ve kullanıcı isteğini
+    birlikte gördüğü için ayrıca keyword tabanlı yönlendirme yapılmıyor.
 
-    return any(w in t for w in image_words) and any(w in t for w in edit_words)
+    İleride ayrı bir "Auto image edit mode" eklenirse bu fonksiyon yeniden
+    aktif kullanılabilir.
+    """
+    return False
 
 
 def _user_wants_text_edit(text: str) -> bool:
-    t = str(text or "").lower()
+    """
+    Legacy auto-detection helper.
 
-    text_words = [
-        "text", "writing", "font", "title", "heading", "paragraph",
-        "yazı", "yazi", "metin", "font", "başlık", "baslik",
-        "paragraf", "içerik", "icerik"
-    ]
+    Şu an bilinçli olarak kullanılmıyor.
+    PDF text/image ayrımı artık Prompt Chooser tarafından belirleniyor.
 
-    edit_words = [
-        "shorten", "minimal", "rewrite", "summarize", "increase", "make bigger",
-        "kısalt", "kisalt", "minimal", "özetle", "ozetle",
-        "büyüt", "buyut", "düzenle", "duzenle"
-    ]
-
-    return any(w in t for w in text_words) and any(w in t for w in edit_words)
+    İleride ayrı bir "Auto text edit mode" eklenirse bu fonksiyon yeniden
+    aktif kullanılabilir.
+    """
+    return False
 
 def _analyze_pdf_kind(path: Path) -> dict:
     """
@@ -696,7 +700,7 @@ def _safe_read_docx(path: Path, max_chars: int = 50000) -> str:
         return out[:max_chars] if out else "[DOCX file is empty or text could not be extracted.]"
 
     except Exception as e:
-        return f"[DOCX okunamadı: {e}]"
+        return f"[DOCX could not be read: {e}]"
 
 def _safe_read_xlsx(path: Path, max_rows: int = 200, max_chars: int = 50000) -> str:
     try:
@@ -722,7 +726,7 @@ def _safe_read_xlsx(path: Path, max_rows: int = 200, max_chars: int = 50000) -> 
         return "\n".join(parts).strip()[:max_chars]
 
     except Exception as e:
-        return f"[XLSX okunamadı: {e}]"
+        return f"[XLSX could not be read: {e}]"
 
 def _is_text_file(path: Path) -> bool:
     ext = path.suffix.lower()
@@ -1803,7 +1807,7 @@ def _build_blocks_and_cache_info(msg: dict, cache_images_dir: Path | None, pdf_m
                         f"mime: {mime}\n"
                         f"editable: {'true' if editable else 'false'}\n"
                         "type: unsupported\n"
-                        "note: Bu dosya türü şu an metin olarak okunamıyor.\n"
+                        "note: This file type cannot currently be read as text.\n"
                         "[/FILE]\n"
                     )
                 })
@@ -2160,7 +2164,7 @@ def _get_models_list(cfg: dict) -> list[dict]:
 def _get_chat_model_entry(cfg: dict, chat_file: Path) -> dict:
     models = _get_models_list(cfg)
     if not models:
-        _die("ai_models in config is empty. At least one model must be defined.", 1)
+        _die(get_ui_text(cfg, "o_AI_Models_Empty"), 1)
 
     model_ids = {m["id"] for m in models}
 
@@ -2575,17 +2579,15 @@ def main():
     pdf_mode_text_image = "pdf_text_image" in selected_prompt_blocks_set
 
     if is_pdf_mixed_request:
-        wants_image = _user_wants_image_edit(last_text)
-        wants_text = _user_wants_text_edit(last_text)
-
-        # Kullanıcı text istiyor ama resim aynı kalsın diyorsa:
-        # AI'ye image edit yaptırma.
-        if wants_text and not wants_image:
-            pdf_mode_text = True
-            pdf_mode_image = False
-            pdf_mode_text_image = False
-
-        is_pdf_mixed_image_only_request = wants_image and not wants_text
+        # Mixed PDF kararını keyword tahminiyle vermiyoruz.
+        # Kullanıcının açık seçimi Prompt Chooser üzerinden gelir:
+        # - pdf_text       -> sadece metin blokları
+        # - pdf_image      -> sadece görsel blokları / sayfa görseli
+        # - pdf_text_image -> metin + görsel layout birlikte
+        #
+        # Bu yüzden _user_wants_image_edit() / _user_wants_text_edit()
+        # burada kullanılmaz.
+        is_pdf_mixed_image_only_request = bool(pdf_mode_image and not pdf_mode_text_image and not pdf_mode_text)
 
     has_editable_pdf_request = (
         is_pdf_text_only_request
@@ -2640,9 +2642,10 @@ def main():
             final_messages.append({
                 "role": "system",
                 "content": (
-                    "Aşağıdaki bilgiler konuşma devamlılığı için verilmiştir. "
-                    "Bunlara doğrudan cevap verme, sadece son kullanıcı mesajını anlamak için kullan.\n\n"
-                    + memory_context
+                    get_ui_text(
+                        cfg,
+                        "o_RAG_Context_System_Message"
+                    ) + "\n\n" + memory_context
                 )
             })
 
@@ -2695,9 +2698,9 @@ def main():
         if recent_messages:
             final_messages.append({
                 "role": "system",
-                "content": (
-                    "Aşağıdaki mesajlar konuşmanın son kısmıdır. "
-                    "Bunlara tek tek cevap verme; sadece en son kullanıcı mesajını anlamak için kullan."
+                "content": get_ui_text(
+                    cfg,
+                    "o_RAG_Recent_Messages_System_Message"
                 )
             })
 
@@ -3019,8 +3022,44 @@ def main():
             )
         )
 
+        has_ref_images = False
+
+        try:
+            for i in selected_indexes:
+                if not (0 <= i < len(messages)):
+                    continue
+
+                rm = messages[i]
+
+                if rm.get("image"):
+                    has_ref_images = True
+                    break
+
+                imgs = rm.get("images")
+                if isinstance(imgs, list) and imgs:
+                    has_ref_images = True
+                    break
+
+                files = rm.get("files")
+                if isinstance(files, list):
+                    for f in files:
+                        if not isinstance(f, dict):
+                            continue
+
+                        p = str(f.get("path") or "").lower()
+
+                        if p.endswith((".png", ".jpg", ".jpeg", ".webp")):
+                            has_ref_images = True
+                            break
+
+                    if has_ref_images:
+                        break
+        except Exception:
+            has_ref_images = False
+
         should_stream = (
             (not has_input_images)
+            and (not has_ref_images)
             and (not wants_file_create)
             and (not is_pdf_text_only_request)
             and (not is_pdf_image_only_request)
