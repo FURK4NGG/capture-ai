@@ -3058,7 +3058,8 @@ def main():
             has_ref_images = False
 
         should_stream = (
-            (not has_input_images)
+            (not is_image_model)
+            and (not has_input_images)
             and (not has_ref_images)
             and (not wants_file_create)
             and (not is_pdf_text_only_request)
@@ -3434,6 +3435,11 @@ def main():
 
                 if usage_obj is not None:
                     result_obj["usage"] = usage_obj
+
+            if not result_obj.get("content") and (
+                result_obj.get("images") or result_obj.get("images_base64")
+            ):
+                result_obj["content"] = get_ui_text(cfg, "o_Image_Created")
 
             # hiç image yoksa düz text fallback
             if not result_obj.get("content") and not result_obj.get("images") and not result_obj.get("images_base64"):
